@@ -38,7 +38,8 @@ class PhysicalGraph extends Graph {
         var y = (Math.random()-0.5)*PhysicalGraph.NODE_SPAWN_RANGE;
         node['physics'] = {
             r: createVector2D(x, y),
-            v: createVector2D()
+            v: createVector2D(),
+            frozen: false,
         };
         return node;
     }
@@ -82,8 +83,10 @@ class PhysicalGraph extends Graph {
         }
     }
     moveNode(node, dt) {
-        node.physics.r.x += node.physics.v.x * dt;
-        node.physics.r.y += node.physics.v.y * dt;
+        if (!node.physics.frozen) {
+            node.physics.r.x += node.physics.v.x * dt;
+            node.physics.r.y += node.physics.v.y * dt;
+        }
     }
     physicsStep(dt) {
         for (var node of this.nodes) {

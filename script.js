@@ -4,7 +4,7 @@ const TWO_ARRAYS_GRAPH = {
         22: {},
         33: {},
         44: {},
-        55: {},
+        55: {"name": "Great idea"},
         66: {},
         77: {},
         88: {},
@@ -28,7 +28,7 @@ var graph = new InteractiveGraph(graphContainerElement);
 graph.fillWithTwoArraysGraph(TWO_ARRAYS_GRAPH);
 
 const SLOWMO_K = 1;
-const RECOMMENDED_FPS = 30 * SLOWMO_K;
+const RECOMMENDED_FPS = 60 * SLOWMO_K;
 const RENDER_DELAY = 1 / RECOMMENDED_FPS; // seconds
 
 function tick() {

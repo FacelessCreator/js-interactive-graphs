@@ -11,8 +11,34 @@ function drawCanvasArrow(context, fromx, fromy, tox, toy, headlen) {
 
 const DEFAULT_NODE_RENDERER = function(containerElement, params) {
     var text = JSON.stringify(params);
-    containerElement.innerHTML = "<p>"+text+"</p>";
+    //containerElement.innerHTML = "<p>"+text+"</p>";
 };
+
+function eventNodeElementMouseDown(event) {
+    event.preventDefault();
+    var nodeElement = event.target;
+    nodeElement.setAttribute("eventType", event.type);
+    nodeElement.onmousemove = eventNodeElementDrag;
+}
+function eventNodeElementMouseUp(event) {
+    event.preventDefault();
+    var nodeElement = event.target;
+    nodeElement.setAttribute("eventType", event.type);
+    nodeElement.onmousemove = null;
+}
+function eventNodeElementMouseLeave(event) {
+    event.preventDefault();
+    var nodeElement = event.target;
+    nodeElement.setAttribute("eventType", event.type);
+    nodeElement.onmousemove = null;
+}
+function eventNodeElementDrag(event) {
+    event.preventDefault();
+    var nodeElement = event.target;
+    nodeElement.setAttribute("eventType", event.type);
+    nodeElement.style.left = event.clientX - nodeElement.parentElement.offsetLeft - InteractiveGraph.DISPLAY_NODE_SIZE + "px";
+    nodeElement.style.top = event.clientY - nodeElement.parentElement.offsetTop - InteractiveGraph.DISPLAY_NODE_SIZE + "px";
+}
 
 class InteractiveGraph extends PhysicalGraph {
     
@@ -32,12 +58,18 @@ class InteractiveGraph extends PhysicalGraph {
         this.ctx = this.canvas.getContext("2d");
     }
 
-    createNode(params={}) {
-        var node = super.createNode(params);
+    createNodeElement(node) {
         node.element = document.createElement("div");
         node.element.style.height = 2*InteractiveGraph.DISPLAY_NODE_SIZE + "px";
         node.element.style.width = 2*InteractiveGraph.DISPLAY_NODE_SIZE + "px";
+        node.element.onmousedown = eventNodeElementMouseDown;
+        node.element.onmouseup = eventNodeElementMouseUp;
+        node.element.onmouseleave = eventNodeElementMouseLeave;
         this.displayContainer.appendChild(node.element);
+    }
+    createNode(params={}) {
+        var node = super.createNode(params);
+        this.createNodeElement(node);
         this.nodeRenderer(node.element, node.params);
         return node;
     }
@@ -48,13 +80,16 @@ class InteractiveGraph extends PhysicalGraph {
     }
 
     physicsStep(dt) {
+        this.checkEvents();
         super.physicsStep(dt);
         this.render();
     }
 
     renderNode(node) {
-        node.element.style.left = node.physics.r.x*InteractiveGraph.METERS_TO_PIXELS_K + this.canvas.width * 0.5 - InteractiveGraph.DISPLAY_NODE_SIZE + "px";
-        node.element.style.top = node.physics.r.y*InteractiveGraph.METERS_TO_PIXELS_K + this.canvas.height * 0.5 - InteractiveGraph.DISPLAY_NODE_SIZE + "px";
+        if (!node.physics.frozen) {
+            node.element.style.left = node.physics.r.x*InteractiveGraph.METERS_TO_PIXELS_K + this.canvas.width * 0.5 - InteractiveGraph.DISPLAY_NODE_SIZE + "px";
+            node.element.style.top = node.physics.r.y*InteractiveGraph.METERS_TO_PIXELS_K + this.canvas.height * 0.5 - InteractiveGraph.DISPLAY_NODE_SIZE + "px";
+        }
     }
     renderArc(arc) {
         var nodeFrom = arc.nodeFrom;
@@ -87,6 +122,39 @@ class InteractiveGraph extends PhysicalGraph {
         this.ctx.stroke();
         for (var node of this.nodes) {
             this.renderNode(node);
+        }
+    }
+
+    applyNodeEventMouseDown(node) {
+        node.physics.frozen = true;
+    }
+    applyNodeEventMouseUp(node) {
+        node.physics.frozen = false;
+    }
+    applyNodeEventMouseLeave(node) {
+        node.physics.frozen = false;
+    }
+    applyNodeEventMouseMove(node) {
+        node.physics.r.x = (node.element.offsetLeft - this.canvas.width * 0.5 + InteractiveGraph.DISPLAY_NODE_SIZE) / InteractiveGraph.METERS_TO_PIXELS_K;
+        node.physics.r.y = (node.element.offsetTop - this.canvas.height * 0.5 + InteractiveGraph.DISPLAY_NODE_SIZE) / InteractiveGraph.METERS_TO_PIXELS_K;
+    }
+    checkEvents() {
+        for (var node of this.nodes) {
+            var eventType = node.element.getAttribute("eventType");
+            if (eventType == undefined) {
+                continue;
+            } else {
+                if (eventType == "mousedown") {
+                    this.applyNodeEventMouseDown(node);
+                } else if (eventType == "mouseup") {
+                    this.applyNodeEventMouseUp(node);
+                } else if (eventType == "mouseleave") {
+                    this.applyNodeEventMouseLeave(node);
+                } else if (eventType == "mousemove") {
+                    this.applyNodeEventMouseMove(node);
+                }
+                node.element.removeAttribute("eventType");
+            }
         }
     }
 
