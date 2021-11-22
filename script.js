@@ -22,13 +22,13 @@ const TWO_ARRAYS_GRAPH = {
     ]
 };
 
-var canvasElement = document.querySelector("canvas");
+var graphContainerElement = document.querySelector(".GraphContainer");
 
-var graph = new InteractiveGraph(canvasElement);
+var graph = new InteractiveGraph(graphContainerElement);
 graph.fillWithTwoArraysGraph(TWO_ARRAYS_GRAPH);
 
 const SLOWMO_K = 1;
-const RECOMMENDED_FPS = 60 * SLOWMO_K;
+const RECOMMENDED_FPS = 30 * SLOWMO_K;
 const RENDER_DELAY = 1 / RECOMMENDED_FPS; // seconds
 
 function tick() {

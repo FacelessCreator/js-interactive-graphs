@@ -9,8 +9,8 @@ function drawCanvasArrow(context, fromx, fromy, tox, toy, headlen) {
     context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
 }
 
-const DEFAULT_NODE_RENDERER = function(containerElement, node) {
-    var text = JSON.stringify(node.params);
+const DEFAULT_NODE_RENDERER = function(containerElement, params) {
+    var text = JSON.stringify(params);
     containerElement.innerHTML = "<p>"+text+"</p>";
 };
 
@@ -20,29 +20,41 @@ class InteractiveGraph extends PhysicalGraph {
 
     static DISPLAY_NODE_SIZE = 50; // in pixels
 
-    constructor(canvasElement) {
+    constructor(container, nodeRenderer=DEFAULT_NODE_RENDERER) {
         super();
-        this.canvas = canvasElement;
-        this.ctx = canvasElement.getContext("2d");
+        this.displayContainer = container;
+        this.nodeRenderer = nodeRenderer;
+
+        this.canvas = document.createElement("canvas");
+        this.displayContainer.appendChild(this.canvas);
+        this.canvas.width = this.displayContainer.offsetWidth;
+        this.canvas.height = this.displayContainer.offsetHeight;
+        this.ctx = this.canvas.getContext("2d");
     }
 
-    renderNodeParams(node) {
-        this.ctx.font = Math.round(InteractiveGraph.DISPLAY_NODE_SIZE*0.5)+'px serif';
-        var x = node.physics.r.x*InteractiveGraph.METERS_TO_PIXELS_K - InteractiveGraph.DISPLAY_NODE_SIZE*0.5 + this.canvas.width * 0.5;
-        var y = node.physics.r.y*InteractiveGraph.METERS_TO_PIXELS_K + InteractiveGraph.DISPLAY_NODE_SIZE*0.25 + this.canvas.height * 0.5;
-        var text = JSON.stringify(node.params);
-        this.ctx.fillText(text, x, y);
+    createNode(params={}) {
+        var node = super.createNode(params);
+        node.element = document.createElement("div");
+        node.element.style.height = 2*InteractiveGraph.DISPLAY_NODE_SIZE + "px";
+        node.element.style.width = 2*InteractiveGraph.DISPLAY_NODE_SIZE + "px";
+        this.displayContainer.appendChild(node.element);
+        this.nodeRenderer(node.element, node.params);
+        return node;
     }
+
+    deleteNode(node) {
+        super.deleteNode(node);
+        this.displayContainer.removeChild(node.element);
+    }
+
+    physicsStep(dt) {
+        super.physicsStep(dt);
+        this.render();
+    }
+
     renderNode(node) {
-        this.ctx.stroke();
-        // node
-        this.ctx.beginPath();
-        var x = node.physics.r.x*InteractiveGraph.METERS_TO_PIXELS_K + this.canvas.width * 0.5;
-        var y = node.physics.r.y*InteractiveGraph.METERS_TO_PIXELS_K + this.canvas.height * 0.5;
-        this.ctx.arc(x, y, InteractiveGraph.DISPLAY_NODE_SIZE, 0, Math.PI * 2, true);
-        this.ctx.stroke();
-        // id
-        this.renderNodeParams(node);
+        node.element.style.left = node.physics.r.x*InteractiveGraph.METERS_TO_PIXELS_K + this.canvas.width * 0.5 - InteractiveGraph.DISPLAY_NODE_SIZE + "px";
+        node.element.style.top = node.physics.r.y*InteractiveGraph.METERS_TO_PIXELS_K + this.canvas.height * 0.5 - InteractiveGraph.DISPLAY_NODE_SIZE + "px";
     }
     renderArc(arc) {
         var nodeFrom = arc.nodeFrom;
@@ -66,19 +78,16 @@ class InteractiveGraph extends PhysicalGraph {
     }
     render() {
         this.renderClear();
+        this.ctx.beginPath();
         for (var node of this.nodes) {
             for (var arc of node.inArcs) {
                 this.renderArc(arc);
             }
         }
+        this.ctx.stroke();
         for (var node of this.nodes) {
             this.renderNode(node);
         }
-    }    
-
-    physicsStep(dt) {
-        super.physicsStep(dt);
-        this.render();
     }
 
 }
