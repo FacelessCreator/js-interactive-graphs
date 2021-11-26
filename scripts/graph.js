@@ -1,5 +1,6 @@
-function createNode(params={}) {
+function createNode(id, params={}) {
     return {
+        id: id,
         inArcs: [],
         outArcs: [],
         params: params,
@@ -15,13 +16,28 @@ function createArc(nodeFrom, nodeTo, params={}) {
 }
 
 class Graph {
+
     constructor() {
-        this.nodes = [];
+        this.lastId = 0;
+        this.nodes = new Map();
     }
 
-    createNode(params={}) {
-        var node = createNode(params)
-        this.nodes.push(node);
+    getNode(nodeId) {
+        return this.nodes.get(nodeId);
+    }
+    forEachNode(func) {
+        this.nodes.forEach(func);
+    }
+
+    createNode(params={}, id=null) {
+        if (!id) {
+            id = ++this.lastId;
+        } else {
+            id = Number(id);
+            this.lastId = Math.max(this.lastId, id);
+        }
+        var node = createNode(id, params);
+        this.nodes.set(id,node);
         return node;
     }
     createArc(nodeFrom, nodeTo, params={}) {
@@ -71,12 +87,7 @@ class Graph {
     }
     deleteNode(node) {
         this.isolateNode(node);
-        var pos = this.nodes.indexOf(node);
-        if (pos >= 0) {
-            this.nodes.splice(pos, 1);
-            return;
-        }
-        throw "no such element";
+        this.nodes.delete(node.id);
     }
 
     clone() {
@@ -84,12 +95,12 @@ class Graph {
         var newGraph = new Graph();
         var oldToNewNode = {};
         var arcsToCopy = [];
-        for (var oldNode of oldGraph.nodes) {
-            oldToNewNode[oldNode] = newGraph.createNode(oldNode.params);
+        oldGraph.forEachNode((oldNode) => {
+            oldToNewNode[oldNode] = newGraph.createNode(oldNode.params, oldNode.id);
             for (var oldArc of oldNode.inArcs) {
                 arcsToCopy.push(oldArc);
             }
-        }
+        });
         for (var oldArc of arcsToCopy) {
             var newNodeFrom = oldToNewNode[oldArc.nodeFrom];
             var newNodeTo = oldToNewNode[oldArc.nodeTo];
@@ -102,8 +113,7 @@ class Graph {
         var nodesById = {};
         for (var nodeId in twoArraysGraph.nodes) {
             var nodeParams = twoArraysGraph.nodes[nodeId];
-            nodeParams['id'] = nodeId;
-            nodesById[nodeId] = this.createNode(nodeParams);
+            nodesById[nodeId] = this.createNode(nodeParams, nodeId);
         }
         for (var arcAsIdPair of twoArraysGraph.arcs) {
             var nodeFromId = arcAsIdPair[0];
