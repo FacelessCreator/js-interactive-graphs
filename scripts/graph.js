@@ -7,8 +7,9 @@ function createNode(id, params={}) {
     };
 }
 
-function createArc(nodeFrom, nodeTo, params={}) {
+function createArc(nodeFrom, nodeTo, id, params={}) {
     return {
+        id: id,
         nodeFrom: nodeFrom,
         nodeTo: nodeTo,
         params: params
@@ -18,37 +19,60 @@ function createArc(nodeFrom, nodeTo, params={}) {
 class Graph {
 
     constructor() {
-        this.lastId = 0;
+        this.lastNodeId = 0;
         this.nodes = new Map();
+        this.lastArcId = 0;
+        this.arcs = new Map();
     }
 
     getNode(nodeId) {
         return this.nodes.get(nodeId);
     }
+    getArc(arcId) {
+        return this.arcs.get(arcId);
+    }
     forEachNode(func) {
         this.nodes.forEach(func);
+    }
+    forEachArc(func) {
+        this.arcs.forEach(func);
+    }
+    forEachNodeArc(node, func) {
+        for (var arc of node.inArcs) {
+            func(arc);
+        }
+        for (var arc of node.outArcs) {
+            func(arc);
+        }
     }
 
     createNode(params={}, id=null) {
         if (!id) {
-            id = ++this.lastId;
+            id = ++this.lastNodeId;
         } else {
             id = Number(id);
-            this.lastId = Math.max(this.lastId, id);
+            this.lastNodeId = Math.max(this.lastNodeId, id);
         }
         var node = createNode(id, params);
         this.nodes.set(id,node);
         return node;
     }
-    createArc(nodeFrom, nodeTo, params={}) {
-        var arc = createArc(nodeFrom, nodeTo, params);
+    createArc(nodeFrom, nodeTo, params={}, id=null) {
+        if (!id) {
+            id = ++this.lastArcId;
+        } else {
+            id = Number(id);
+            this.lastArcId = Math.max(this.lastArcId, id);
+        }
+        var arc = createArc(nodeFrom, nodeTo, id, params);
+        this.arcs.set(id, arc);
         nodeFrom.outArcs.push(arc);
         nodeTo.inArcs.push(arc);
         return arc;
     }
 
     findArcBetweenNodes(nodeFrom, nodeTo) {
-        for (var arc of nodeFrom.outArcs) {
+        for (const [id, arc] of this.arcs) {
             if (arc.nodeTo == nodeTo) {
                 return arc;
             }
@@ -56,7 +80,7 @@ class Graph {
         throw "no such element";
     }
 
-    deleteArcFromNode(arc, node) {
+    deleteArcFromNode(arc, node) { // LOCAL FUNCTION
         var inPos = node.inArcs.indexOf(arc);
         if (inPos >= 0) {
             node.inArcs.splice(inPos, 1);
@@ -73,14 +97,16 @@ class Graph {
         var arc = this.findArcBetweenNodes(nodeFrom, nodeTo);
         this.deleteArcFromNode(arc, nodeFrom);
         this.deleteArcFromNode(arc, nodeTo);
-        throw "no such element";
+        this.arcs.delete(arc.id);
     }
     isolateNode(node) {
         for (var arc of node.inArcs) {
             this.deleteArcFromNode(arc, arc.nodeFrom);
+            this.arcs.delete(arc.id);
         }
         for (var arc of node.outArcs) {
             this.deleteArcFromNode(arc, arc.nodeTo);
+            this.arcs.delete(arc.id);
         }
         node.inArcs = [];
         node.outArcs = [];
@@ -104,7 +130,7 @@ class Graph {
         for (var oldArc of arcsToCopy) {
             var newNodeFrom = oldToNewNode[oldArc.nodeFrom];
             var newNodeTo = oldToNewNode[oldArc.nodeTo];
-            newGraph.createArc(newNodeFrom, newNodeTo, oldArc.params);
+            newGraph.createArc(newNodeFrom, newNodeTo, oldArc.params, oldArc.id);
         }
         return newGraph;
     }

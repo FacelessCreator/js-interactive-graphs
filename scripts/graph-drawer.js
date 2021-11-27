@@ -17,13 +17,12 @@ class GraphDrawer {
         this.nodeParamsRenderer = nodeParamsRenderer;
 
         this.setupGraphData();
-        this.setupCanvas();
         this.generateGraphCoords();
+        this.setupSVG();
         this.createGraphElements();
         this.updateGraphElementsScale();
         this.updateGraphElementsCoords();
         this.updateGraphElementsParams();
-        this.renderCanvas();
 
         this.setupDragging();
     }
@@ -34,21 +33,47 @@ class GraphDrawer {
     getNodeDataById(nodeId) {
         return this.nodesData.get(nodeId);
     }
+    getArcData(arc) {
+        return this.arcsData.get(arc.id);
+    }
+    getArcDataById(arcId) {
+        return this.arcsData.get(arcId);
+    }
+
     setupNodeData(node) {
         this.nodesData.set(node.id, {
             coords: null,
             element: null
         });
     }
-    forEachNodeData(func) {
-        this.nodesData.forEach(func);
+    setupArcData(arc) {
+        this.arcsData.set(arc.id, {
+            element: null
+        });
     }
-
     setupGraphData() {
         this.nodesData = new Map();
         this.graph.forEachNode((node) => {
             this.setupNodeData(node);
         });
+        this.arcsData = new Map();
+        this.graph.forEachArc((arc) => {
+            this.setupArcData(arc);
+        });
+    }
+
+    setupSVG() {
+        this.svgElement = TEMPLATE_SVG_ELEMENT.cloneNode();
+        this.displayContainer.appendChild(this.svgElement);
+        this.svgElement.width.baseVal.value = this.displayContainer.offsetWidth;
+        this.svgElement.height.baseVal.value = this.displayContainer.offsetHeight;
+    }
+
+    forEachNodeData(func) {
+        this.nodesData.forEach(func);
+    }
+    forEachArcData(func) {
+        this.arcsData.forEach(func);
     }
     
     generateNodeCoords(node) { // WIP change function to something intellectual
@@ -70,9 +95,18 @@ class GraphDrawer {
         nodeData.element = element;
         return element;
     }
+    createArcElement(arc) {
+        var element = createArrow(this.svgElement);
+        var arcData = this.getArcData(arc);
+        arcData.element = element;
+        return element;
+    }
     createGraphElements() {
         this.graph.forEachNode((node) => {
             this.createNodeElement(node);
+        });
+        this.graph.forEachArc((arc) => {
+            this.createArcElement(arc);
         });
     }
 
@@ -87,12 +121,41 @@ class GraphDrawer {
     }
 
     updateNodeElementCoords(nodeData) { // see the difference between updateNodeCoords and updateNodeElementCoords
-        nodeData.element.style.left = (nodeData.coords.x * GraphDrawer.METERS_TO_PIXELS_K + this.canvas.width * 0.5 - GraphDrawer.NODE_ELEMENT_SIZE) + "px";
-        nodeData.element.style.top = (nodeData.coords.y * GraphDrawer.METERS_TO_PIXELS_K + this.canvas.height * 0.5 - GraphDrawer.NODE_ELEMENT_SIZE) + "px";
+        nodeData.element.style.left = (nodeData.coords.x * GraphDrawer.METERS_TO_PIXELS_K + this.displayContainer.offsetWidth * 0.5 - GraphDrawer.NODE_ELEMENT_SIZE) + "px";
+        nodeData.element.style.top = (nodeData.coords.y * GraphDrawer.METERS_TO_PIXELS_K + this.displayContainer.offsetHeight * 0.5 - GraphDrawer.NODE_ELEMENT_SIZE) + "px";
+    }
+    updateArcElementCoords(arc) {
+        var nodeFromElement = this.getNodeData(arc.nodeFrom).element;
+        var nodeToElement = this.getNodeData(arc.nodeTo).element;
+        var fromX = nodeFromElement.offsetLeft + GraphDrawer.NODE_ELEMENT_SIZE;
+        var fromY = nodeFromElement.offsetTop + GraphDrawer.NODE_ELEMENT_SIZE;
+        var toX = nodeToElement.offsetLeft + GraphDrawer.NODE_ELEMENT_SIZE;
+        var toY = nodeToElement.offsetTop + GraphDrawer.NODE_ELEMENT_SIZE;
+        // arrow should be some smaller to point from node circle to node circle not point to point
+        var deltaX = toX - fromX;
+        var deltaY = toY - fromY;
+        var angle = Math.atan2(deltaY, deltaX);
+        fromX += GraphDrawer.NODE_ELEMENT_SIZE * Math.cos(angle);
+        toX -= GraphDrawer.NODE_ELEMENT_SIZE * Math.cos(angle);
+        fromY += GraphDrawer.NODE_ELEMENT_SIZE * Math.sin(angle);
+        toY -= GraphDrawer.NODE_ELEMENT_SIZE * Math.sin(angle);
+        var arcElement = this.getArcData(arc).element;
+        arcElement.setAttribute('x1', fromX);
+        arcElement.setAttribute('y1', fromY);
+        arcElement.setAttribute('x2', toX);
+        arcElement.setAttribute('y2', toY);
     }
     updateGraphElementsCoords() {
         this.forEachNodeData((nodeData) => {
             this.updateNodeElementCoords(nodeData);
+        });
+        this.graph.forEachArc((arc) => {
+            this.updateArcElementCoords(arc);
+        });
+    }
+    updateArcConnectedToNodeElementsCoords(node) {
+        this.graph.forEachNodeArc(node, (arc) => {
+            this.updateArcElementCoords(arc);
         });
     }
 
@@ -108,49 +171,8 @@ class GraphDrawer {
 
     updateNodeCoords(node) { // see the difference between updateNodeCoords and updateNodeElementCoords
         var nodeData = this.getNodeData(node);
-        nodeData.coords.x = (nodeData.element.offsetLeft - this.canvas.width * 0.5 + GraphDrawer.NODE_ELEMENT_SIZE) / GraphDrawer.METERS_TO_PIXELS_K;
-        nodeData.coords.y = (nodeData.element.offsetTop - this.canvas.height * 0.5 + GraphDrawer.NODE_ELEMENT_SIZE) / GraphDrawer.METERS_TO_PIXELS_K;
-    }
-
-    setupCanvas() {
-        this.canvas = document.createElement("canvas");
-        this.displayContainer.appendChild(this.canvas);
-        this.canvas.width = this.displayContainer.offsetWidth;
-        this.canvas.height = this.displayContainer.offsetHeight;
-        this.ctx = this.canvas.getContext("2d");
-    }
-
-    renderCanvasArc(arc) {
-        var nodeFromId = arc.nodeFrom.id;
-        var nodeToId = arc.nodeTo.id;
-        var nodeFromData = this.getNodeDataById(nodeFromId);
-        var nodeToData = this.getNodeDataById(nodeToId);
-        var fromX = nodeFromData.coords.x*GraphDrawer.METERS_TO_PIXELS_K + this.canvas.width * 0.5;
-        var fromY = nodeFromData.coords.y*GraphDrawer.METERS_TO_PIXELS_K + this.canvas.height * 0.5;
-        var toX = nodeToData.coords.x*GraphDrawer.METERS_TO_PIXELS_K + this.canvas.width * 0.5;
-        var toY = nodeToData.coords.y*GraphDrawer.METERS_TO_PIXELS_K + this.canvas.height * 0.5;
-        // arrow should be some smaller to point from node circle to node circle not point to point
-        var deltaX = toX - fromX;
-        var deltaY = toY - fromY;
-        var angle = Math.atan2(deltaY, deltaX);
-        fromX += GraphDrawer.NODE_ELEMENT_SIZE * Math.cos(angle);
-        toX -= GraphDrawer.NODE_ELEMENT_SIZE * Math.cos(angle);
-        fromY += GraphDrawer.NODE_ELEMENT_SIZE * Math.sin(angle);
-        toY -= GraphDrawer.NODE_ELEMENT_SIZE * Math.sin(angle);
-        drawCanvasArrow(this.ctx, fromX, fromY, toX, toY, GraphDrawer.NODE_ELEMENT_SIZE);
-    }
-    clearCanvas() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-    renderCanvas() {
-        this.clearCanvas();
-        this.ctx.beginPath();
-        this.graph.forEachNode((node) => {
-            for (var arc of node.inArcs) {
-                this.renderCanvasArc(arc);
-            }
-        });
-        this.ctx.stroke();
+        nodeData.coords.x = (nodeData.element.offsetLeft - this.svgElement.width * 0.5 + GraphDrawer.NODE_ELEMENT_SIZE) / GraphDrawer.METERS_TO_PIXELS_K;
+        nodeData.coords.y = (nodeData.element.offsetTop - this.svgElement.height * 0.5 + GraphDrawer.NODE_ELEMENT_SIZE) / GraphDrawer.METERS_TO_PIXELS_K;
     }
 
     setupDragging() {
@@ -166,7 +188,7 @@ class GraphDrawer {
             element.style.top = newCoords.y;
             var node = this.graph.getNode(this.draggingNodeId);
             this.updateNodeCoords(node);
-            this.renderCanvas();
+            this.updateArcConnectedToNodeElementsCoords(node);
         }
     }
     stopDragging() {

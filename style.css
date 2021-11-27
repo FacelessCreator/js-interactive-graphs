@@ -11,6 +11,16 @@ body {
     overflow: hidden;
 }
 
+.GraphContainer svg {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.GraphContainer svg line {
+    cursor: pointer;
+}
+
 .GraphContainer div {
     position: absolute;
     border-radius: 50%;
@@ -19,4 +29,10 @@ body {
     align-items: center;
     justify-content: center;
     cursor:grab;
+}
+
+.SVGArrow{
+    stroke:#000000;
+    stroke-width: 4px; 
+    marker-end:url(#markerArrow)
 }
