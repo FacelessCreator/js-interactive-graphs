@@ -27,18 +27,26 @@ class KeyMouseGraphDrawer extends GraphDrawer {
     eventCanvasMouseDown(drawer, event) {
         event.preventDefault();
 
+        drawer.startCameraMovement(createVector2D(event.clientX, event.clientY));
     }
     eventCanvasMouseMove(drawer, event) {
         event.preventDefault();
 
         if (drawer.draggingNodeId) {
             drawer.doDragging(createVector2D(event.clientX, event.clientY));
+        } else if (drawer.isCameraMoving) {
+            drawer.doCameraMovement(createVector2D(event.clientX, event.clientY), 1); // WIP add zoom change
         }
     }
     eventCanvasMouseUp(drawer, event) {
         event.preventDefault();
 
-        drawer.stopDragging();
+        if (drawer.draggingNodeId) {
+            drawer.stopDragging();
+        } else if (drawer.isCameraMoving) {
+            drawer.stopCameraMovement();
+        }
+        
     }
 
     eventNodeElementMouseDown(drawer, nodeId, event) {
@@ -47,11 +55,11 @@ class KeyMouseGraphDrawer extends GraphDrawer {
 
         drawer.startDragging(nodeId, createVector2D(event.clientX, event.clientY));
     }
-    eventNodeElementMouseUp(drawer, nodeId, event) {
+    /*eventNodeElementMouseUp(drawer, nodeId, event) {
         event.preventDefault();
         event.stopPropagation();
 
         drawer.stopDragging();
-    }
+    }*/
 
 }
