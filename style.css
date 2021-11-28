@@ -5,10 +5,14 @@ body {
 .GraphContainer {
     margin: 0 auto 0 auto;
     border: 1px solid black;
-    width: 700px;
-    height: 700px;
+    width: 95vw;
+    height: 90vh;
     position: relative;
     overflow: hidden;
+}
+
+h1 {
+    font-size: 2vh;
 }
 
 .GraphContainer svg {
