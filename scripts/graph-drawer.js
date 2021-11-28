@@ -102,7 +102,7 @@ class GraphDrawer {
         return element;
     }
     createArcElement(arc) {
-        var element = createArrow(this.svgElement);
+        var element = createSVGArrow(this.svgElement);
         var arcData = this.getArcData(arc);
         arcData.element = element;
         return element;
@@ -117,34 +117,40 @@ class GraphDrawer {
     }
 
     updateNodeElementScale(nodeData) {
-        nodeData.element.style.height = 2*GraphDrawer.NODE_ELEMENT_SIZE + "px";
-        nodeData.element.style.width = 2*GraphDrawer.NODE_ELEMENT_SIZE + "px";
+        nodeData.element.style.height = 2 * (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) + "px";
+        nodeData.element.style.width = 2 * (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) + "px";
+    }
+    updateArcElementScale(arcData) {
+        setSVGArrowSize(arcData.element, 0.1 * GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom)
     }
     updateGraphElementsScale() {
         this.forEachNodeData((nodeData) => {
             this.updateNodeElementScale(nodeData);
         });
+        this.forEachArcData((arcData) => {
+            this.updateArcElementScale(arcData);
+        });
     }
 
     updateNodeElementCoords(nodeData) { // see the difference between updateNodeCoords and updateNodeElementCoords
-        nodeData.element.style.left = (nodeData.coords.x * GraphDrawer.METERS_TO_PIXELS_K + this.displayContainer.offsetWidth * 0.5 - GraphDrawer.NODE_ELEMENT_SIZE - this.camera.coords.x) + "px";
-        nodeData.element.style.top = (nodeData.coords.y * GraphDrawer.METERS_TO_PIXELS_K + this.displayContainer.offsetHeight * 0.5 - GraphDrawer.NODE_ELEMENT_SIZE - this.camera.coords.y) + "px";
+        nodeData.element.style.left = (nodeData.coords.x * (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) + this.displayContainer.offsetWidth * 0.5 - (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) - this.camera.coords.x) + "px";
+        nodeData.element.style.top = (nodeData.coords.y * (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) + this.displayContainer.offsetHeight * 0.5 - (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) - this.camera.coords.y) + "px";
     }
     updateArcElementCoords(arc) {
         var nodeFromElement = this.getNodeData(arc.nodeFrom).element;
         var nodeToElement = this.getNodeData(arc.nodeTo).element;
-        var fromX = nodeFromElement.offsetLeft + GraphDrawer.NODE_ELEMENT_SIZE;
-        var fromY = nodeFromElement.offsetTop + GraphDrawer.NODE_ELEMENT_SIZE;
-        var toX = nodeToElement.offsetLeft + GraphDrawer.NODE_ELEMENT_SIZE;
-        var toY = nodeToElement.offsetTop + GraphDrawer.NODE_ELEMENT_SIZE;
+        var fromX = nodeFromElement.offsetLeft + (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom);
+        var fromY = nodeFromElement.offsetTop + (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom);
+        var toX = nodeToElement.offsetLeft + (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom);
+        var toY = nodeToElement.offsetTop + (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom);
         // arrow should be some smaller to point from node circle to node circle not point to point
         var deltaX = toX - fromX;
         var deltaY = toY - fromY;
         var angle = Math.atan2(deltaY, deltaX);
-        fromX += GraphDrawer.NODE_ELEMENT_SIZE * Math.cos(angle);
-        toX -= GraphDrawer.NODE_ELEMENT_SIZE * Math.cos(angle);
-        fromY += GraphDrawer.NODE_ELEMENT_SIZE * Math.sin(angle);
-        toY -= GraphDrawer.NODE_ELEMENT_SIZE * Math.sin(angle);
+        fromX += (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) * Math.cos(angle);
+        toX -= (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) * Math.cos(angle);
+        fromY += (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) * Math.sin(angle);
+        toY -= (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) * Math.sin(angle);
         var arcElement = this.getArcData(arc).element;
         arcElement.setAttribute('x1', fromX);
         arcElement.setAttribute('y1', fromY);
@@ -175,14 +181,6 @@ class GraphDrawer {
         });
     }
 
-    // DEPRECATED
-    // see the difference between updateNodeCoords and updateNodeElementCoords
-    /*updateNodeCoords(node) {
-        var nodeData = this.getNodeData(node);
-        nodeData.coords.x = (nodeData.element.offsetLeft - this.svgElement.width * 0.5 + GraphDrawer.NODE_ELEMENT_SIZE) / GraphDrawer.METERS_TO_PIXELS_K;
-        nodeData.coords.y = (nodeData.element.offsetTop - this.svgElement.height * 0.5 + GraphDrawer.NODE_ELEMENT_SIZE) / GraphDrawer.METERS_TO_PIXELS_K;
-    }*/
-
     setupDragging() {
         this.draggingNodeId = null;
     }
@@ -194,7 +192,7 @@ class GraphDrawer {
         var node = this.graph.getNode(this.draggingNodeId);
         var nodeData = this.getNodeDataById(this.draggingNodeId);
         var deltaPixels = substructVectors(newPoint, this.draggingLastPoint);
-        var deltaCoords = multiplyVector(deltaPixels, 1 / GraphDrawer.METERS_TO_PIXELS_K);
+        var deltaCoords = multiplyVector(deltaPixels, 1 / (GraphDrawer.METERS_TO_PIXELS_K * this.camera.zoom));
         nodeData.coords = addVectors(nodeData.coords, deltaCoords);
         this.draggingLastPoint = newPoint;
         this.updateNodeElementCoords(nodeData);
@@ -212,7 +210,7 @@ class GraphDrawer {
         this.isCameraMoving = true;
         this.cameraMovementLastPoint = startPoint;
     }
-    doCameraMovement(newPoint, newZoom) {
+    doCameraMovement(newPoint) {
         var deltaCoords = substructVectors(newPoint, this.cameraMovementLastPoint);
         this.cameraMovementLastPoint = newPoint;
         this.camera.coords = substructVectors(this.camera.coords, deltaCoords); // see: we substruct, not add deltaVector!
@@ -221,6 +219,12 @@ class GraphDrawer {
     stopCameraMovement() {
         this.isCameraMoving = false;
         delete this.cameraMovementLastPoint;
+    }
+
+    zoomCamera(deltaZoom) {
+        this.camera.zoom += deltaZoom;
+        this.updateGraphElementsCoords();
+        this.updateGraphElementsScale();
     }
 
 }

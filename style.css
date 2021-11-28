@@ -32,7 +32,6 @@ body {
 }
 
 .SVGArrow{
-    stroke:#000000;
-    stroke-width: 4px; 
+    stroke:#000000; 
     marker-end:url(#markerArrow)
 }

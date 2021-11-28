@@ -8,15 +8,15 @@ class KeyMouseGraphDrawer extends GraphDrawer {
     }
 
     linkContainterToListeners() {
-        this.displayContainer.addEventListener("mousedown", (e) => {this.eventCanvasMouseDown(this, e)}); // WIP antipattern? madness?
-        this.displayContainer.addEventListener("mousemove", (e) => {this.eventCanvasMouseMove(this, e)}); // WIP antipattern? madness?
-        this.displayContainer.addEventListener("mouseup", (e) => {this.eventCanvasMouseUp(this, e)}); // WIP antipattern? madness?
+        this.displayContainer.addEventListener("mousedown", (e) => {this.eventContainerMouseDown(this, e)}); // WIP antipattern? madness?
+        this.displayContainer.addEventListener("mousemove", (e) => {this.eventContainerMouseMove(this, e)}); // WIP antipattern? madness?
+        this.displayContainer.addEventListener("mouseup", (e) => {this.eventContainerMouseUp(this, e)}); // WIP antipattern? madness?
+        this.displayContainer.addEventListener("wheel", (e) => {this.eventContainerWheel(this, e)}); // WIP antipattern? madness?
     }
 
     linkNodeElementToListeners(node) {
         var nodeElement = this.getNodeData(node).element;
         nodeElement.addEventListener("mousedown", (e) => {this.eventNodeElementMouseDown(this, node.id, e)}); // WIP antipattern? madness?
-        //nodeElement.addEventListener("mouseup", (e) => {this.eventNodeElementMouseUp(this, node.id, e)}); // WIP antipattern? madness?
     }
     linkGraphElementsToListeners() {
         this.graph.forEachNode((node) => {
@@ -24,12 +24,12 @@ class KeyMouseGraphDrawer extends GraphDrawer {
         });
     }
 
-    eventCanvasMouseDown(drawer, event) {
+    eventContainerMouseDown(drawer, event) {
         event.preventDefault();
 
         drawer.startCameraMovement(createVector2D(event.clientX, event.clientY));
     }
-    eventCanvasMouseMove(drawer, event) {
+    eventContainerMouseMove(drawer, event) {
         event.preventDefault();
 
         if (drawer.draggingNodeId) {
@@ -38,7 +38,7 @@ class KeyMouseGraphDrawer extends GraphDrawer {
             drawer.doCameraMovement(createVector2D(event.clientX, event.clientY), 1); // WIP add zoom change
         }
     }
-    eventCanvasMouseUp(drawer, event) {
+    eventContainerMouseUp(drawer, event) {
         event.preventDefault();
 
         if (drawer.draggingNodeId) {
@@ -46,7 +46,13 @@ class KeyMouseGraphDrawer extends GraphDrawer {
         } else if (drawer.isCameraMoving) {
             drawer.stopCameraMovement();
         }
-        
+    }
+
+    static WHEEL_ZOOM_K = -0.001;
+
+    eventContainerWheel(drawer, event) {
+        event.preventDefault();
+        drawer.zoomCamera(event.deltaY * KeyMouseGraphDrawer.WHEEL_ZOOM_K);
     }
 
     eventNodeElementMouseDown(drawer, nodeId, event) {
@@ -55,11 +61,5 @@ class KeyMouseGraphDrawer extends GraphDrawer {
 
         drawer.startDragging(nodeId, createVector2D(event.clientX, event.clientY));
     }
-    /*eventNodeElementMouseUp(drawer, nodeId, event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        drawer.stopDragging();
-    }*/
 
 }

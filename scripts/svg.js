@@ -2,8 +2,12 @@
 const TEMPLATE_SVG_ELEMENT = document.querySelector("#templateSVG");
 const TEMPLATE_ARROW_ELEMENT = document.querySelector("#templateArrow");
 
-function createArrow(svgElement) {
+function createSVGArrow(svgElement) {
     var element = TEMPLATE_ARROW_ELEMENT.cloneNode();
     svgElement.appendChild(element);
     return element;
+}
+
+function setSVGArrowSize(element, size) {
+    element.style.strokeWidth = size;
 }
