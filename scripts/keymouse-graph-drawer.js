@@ -32,10 +32,7 @@ class KeyMouseGraphDrawer extends GraphDrawer {
         event.preventDefault();
 
         if (drawer.draggingNodeId) {
-            var nodeElement = drawer.getNodeDataById(drawer.draggingNodeId).element;
-            var x = (event.clientX - nodeElement.parentElement.offsetLeft - GraphDrawer.NODE_ELEMENT_SIZE) + "px";
-            var y = (event.clientY - nodeElement.parentElement.offsetTop - GraphDrawer.NODE_ELEMENT_SIZE) + "px";
-            drawer.doDragging(createVector2D(x, y));
+            drawer.doDragging(createVector2D(event.clientX, event.clientY));
         }
     }
     eventCanvasMouseUp(drawer, event) {
@@ -48,7 +45,7 @@ class KeyMouseGraphDrawer extends GraphDrawer {
         event.preventDefault();
         event.stopPropagation();
 
-        drawer.startDragging(nodeId);
+        drawer.startDragging(nodeId, createVector2D(event.clientX, event.clientY));
     }
     eventNodeElementMouseUp(drawer, nodeId, event) {
         event.preventDefault();

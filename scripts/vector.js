@@ -17,3 +17,23 @@ function setVectorLength(vect, newLength) {
         y: vect.y * newLength / oldLength
     };
 }
+
+function multiplyVector(vect, k) {
+    return {
+        x: vect.x * k,
+        y: vect.y * k
+    }
+}
+
+function addVectors(vectA, vectB) {
+    return {
+        x: vectA.x + vectB.x,
+        y: vectA.y + vectB.y
+    }
+}
+function substructVectors(vectA, vectB) {
+    return {
+        x: vectA.x - vectB.x,
+        y: vectA.y - vectB.y
+    }
+}

@@ -169,7 +169,9 @@ class GraphDrawer {
         });
     }
 
-    updateNodeCoords(node) { // see the difference between updateNodeCoords and updateNodeElementCoords
+    // DEPRECATED
+    // see the difference between updateNodeCoords and updateNodeElementCoords
+    updateNodeCoords(node) {
         var nodeData = this.getNodeData(node);
         nodeData.coords.x = (nodeData.element.offsetLeft - this.svgElement.width * 0.5 + GraphDrawer.NODE_ELEMENT_SIZE) / GraphDrawer.METERS_TO_PIXELS_K;
         nodeData.coords.y = (nodeData.element.offsetTop - this.svgElement.height * 0.5 + GraphDrawer.NODE_ELEMENT_SIZE) / GraphDrawer.METERS_TO_PIXELS_K;
@@ -178,21 +180,25 @@ class GraphDrawer {
     setupDragging() {
         this.draggingNodeId = null;
     }
-    startDragging(nodeId) {
+    startDragging(nodeId, startPoint) {
         this.draggingNodeId = nodeId;
+        this.draggingLastPoint = startPoint;
     }
-    doDragging(newCoords) {
+    doDragging(newPoint) {
         if (this.draggingNodeId) {
-            var element = this.getNodeDataById(this.draggingNodeId).element;
-            element.style.left = newCoords.x;
-            element.style.top = newCoords.y;
             var node = this.graph.getNode(this.draggingNodeId);
-            this.updateNodeCoords(node);
+            var nodeData = this.getNodeDataById(this.draggingNodeId);
+            var deltaPixels = substructVectors(newPoint, this.draggingLastPoint);
+            var deltaCoords = multiplyVector(deltaPixels, 1 / GraphDrawer.METERS_TO_PIXELS_K);
+            nodeData.coords = addVectors(nodeData.coords, deltaCoords);
+            this.draggingLastPoint = newPoint;
+            this.updateNodeElementCoords(nodeData);
             this.updateArcConnectedToNodeElementsCoords(node);
         }
     }
     stopDragging() {
         this.draggingNodeId = null;
+        this.draggingLastPoint = null;
     }
 
 }
