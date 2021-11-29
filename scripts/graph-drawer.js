@@ -8,6 +8,7 @@ class GraphDrawer {
 
     static METERS_TO_PIXELS_K = 50;
     static NODE_ELEMENT_SIZE = 50; // in pixels
+    static ARC_ELEMENT_SIZE = 15; // in pixels
 
     static NODE_RANDOM_SPAWN_RANGE = 10;
 
@@ -122,7 +123,7 @@ class GraphDrawer {
         nodeData.element.style.width = 2 * (GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom) + "px";
     }
     updateArcElementScale(arcData) {
-        setSVGArrowSize(arcData.element, 0.1 * GraphDrawer.NODE_ELEMENT_SIZE * this.camera.zoom)
+        setSVGArrowSize(arcData.element, GraphDrawer.ARC_ELEMENT_SIZE * this.camera.zoom)
     }
     updateGraphElementsScale() {
         this.forEachNodeData((nodeData) => {
@@ -214,6 +215,7 @@ class GraphDrawer {
         this.cameraMovementLastPoint = startPoint;
     }
     doCameraMovement(newPoint) {
+        this.cameraWasMoved = true;
         var deltaCoords = substructVectors(newPoint, this.cameraMovementLastPoint);
         this.cameraMovementLastPoint = newPoint;
         this.camera.coords = substructVectors(this.camera.coords, deltaCoords); // see: we substruct, not add deltaVector!
@@ -222,6 +224,7 @@ class GraphDrawer {
     stopCameraMovement() {
         this.isCameraMoving = false;
         delete this.cameraMovementLastPoint;
+        delete this.cameraWasMoved;
     }
 
     zoomCamera(deltaZoom) {

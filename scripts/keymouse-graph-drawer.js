@@ -22,7 +22,8 @@ class KeyMouseGraphDrawer extends GraphDrawer {
     }
     linkArcElementToListeners(arc) {
         var arcElement = this.getArcData(arc).element;
-        arcElement.addEventListener("click", (e) => {this.eventArcElementClick(this, arc.id, e)}); // WIP WARNING antipattern? madness?
+        arcElement.addEventListener("mousedown", (e) => {this.eventArcElementMouseDown(this, arc.id, e)}); // WIP WARNING antipattern? madness?
+        arcElement.addEventListener("mouseup", (e) => {this.eventArcElementMouseUp(this, arc.id, e)}); // WIP WARNING antipattern? madness?
     }
     linkGraphElementsToListeners() {
         this.graph.forEachNode((node) => {
@@ -50,6 +51,9 @@ class KeyMouseGraphDrawer extends GraphDrawer {
     eventContainerMouseUp(drawer, event) {
         event.preventDefault();
 
+        if (!this.cameraWasMoved) {
+            drawer.clearSelection();
+        }
         if (drawer.draggingNodeId) {
             drawer.stopDragging();
         } else if (drawer.isCameraMoving) {
@@ -83,7 +87,11 @@ class KeyMouseGraphDrawer extends GraphDrawer {
         }
     }
 
-    eventArcElementClick(drawer, arcId, event) {
+    eventArcElementMouseDown(drawer, arcId, event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    eventArcElementMouseUp(drawer, arcId, event) {
         event.preventDefault();
         event.stopPropagation();
 
