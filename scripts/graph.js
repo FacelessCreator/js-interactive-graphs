@@ -155,4 +155,15 @@ class Graph {
         }
     }
 
+    reverseArc(arc) {
+        var nodeFrom = arc.nodeFrom;
+        var nodeTo = arc.nodeTo;
+        this.deleteArcFromNode(arc, nodeFrom);
+        this.deleteArcFromNode(arc, nodeTo);
+        arc.nodeTo = nodeFrom;
+        arc.nodeFrom = nodeTo;
+        nodeFrom.inArcs.push(arc);
+        nodeTo.outArcs.push(arc);
+    }
+
 }

@@ -353,4 +353,11 @@ class GraphDrawer {
         return arcs;
     }
 
+    reverseSelectedArcs() {
+        for (var arc of this.selectedArcs) {
+            this.graph.reverseArc(arc);
+            this.updateArcElementCoords(arc);
+        }
+    }
+
 }

@@ -95,6 +95,7 @@ class KeyMouseGraphDrawer extends GraphDrawer {
     static CREATE_NODE_KEYCODES = new Set(["KeyN"]);
     static CANCEL_KEYCODES = new Set(["Escape"]);
     static CONNECT_KEYCODES = new Set(["KeyC"]);
+    static REVERSE_ARC_KEYCODES = new Set(["KeyR"]);
 
     eventKeyUp(drawer, event) {
         const keyName = event.code;
@@ -115,6 +116,8 @@ class KeyMouseGraphDrawer extends GraphDrawer {
                     drawer.linkArcElementToListeners(arc);
                 }
             }
+        } else  if (KeyMouseGraphDrawer.REVERSE_ARC_KEYCODES.has(keyName)) {
+            drawer.reverseSelectedArcs();
         }
     }
 
