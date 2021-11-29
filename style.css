@@ -6,7 +6,7 @@ body {
     margin: 0 auto 0 auto;
     border: 1px solid black;
     width: 95vw;
-    height: 90vh;
+    height: 60vh;
     position: relative;
     overflow: hidden;
     cursor: move;
