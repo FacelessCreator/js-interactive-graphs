@@ -277,4 +277,35 @@ class GraphDrawer {
         }
     }
 
+    deleteArc(arc) {
+        var arcData = this.getArcData(arc);
+        arcData.element.remove();
+        this.arcsData.delete(arc.id);
+        this.graph.deleteArc(arc);
+    }
+    deleteNode(node) {
+        var arcsToDelete = [];
+        this.graph.forEachNodeArc(node, (arc) => {
+            arcsToDelete.push(arc);
+        });
+        for (var arc of arcsToDelete) {
+            this.deleteArc(arc);
+        }
+        var nodeData = this.getNodeData(node);
+        nodeData.element.remove();
+        this.nodesData.delete(node.id);
+        this.graph.deleteNode(node);
+    }
+
+    deleteSelected() {
+        this.selectedArcs.forEach((arc) => {
+            this.deleteArc(arc);
+        });
+        this.selectedNodes.forEach((node) => {
+            this.deleteNode(node);
+        });
+        this.selectedNodes = new Set();
+        this.selectedArcs = new Set();
+    }
+
 }

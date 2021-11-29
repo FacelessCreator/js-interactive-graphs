@@ -93,7 +93,7 @@ class Graph {
         }
         throw "no such element";
     }
-    deleteArc(nodeFrom, nodeTo) {
+    deleteArcBetweenNodes(nodeFrom, nodeTo) {
         var arc = this.findArcBetweenNodes(nodeFrom, nodeTo);
         this.deleteArcFromNode(arc, nodeFrom);
         this.deleteArcFromNode(arc, nodeTo);
@@ -114,6 +114,11 @@ class Graph {
     deleteNode(node) {
         this.isolateNode(node);
         this.nodes.delete(node.id);
+    }
+    deleteArc(arc) {
+        this.deleteArcFromNode(arc, arc.nodeFrom);
+        this.deleteArcFromNode(arc, arc.nodeTo);
+        this.arcs.delete(arc.id);
     }
 
     clone() {

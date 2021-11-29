@@ -8,20 +8,21 @@ class KeyMouseGraphDrawer extends GraphDrawer {
     }
 
     linkContainterToListeners() {
-        this.displayContainer.addEventListener("mousedown", (e) => {this.eventContainerMouseDown(this, e)}); // WIP antipattern? madness?
-        this.displayContainer.addEventListener("mousemove", (e) => {this.eventContainerMouseMove(this, e)}); // WIP antipattern? madness?
-        this.displayContainer.addEventListener("mouseup", (e) => {this.eventContainerMouseUp(this, e)}); // WIP antipattern? madness?
-        this.displayContainer.addEventListener("wheel", (e) => {this.eventContainerWheel(this, e)}); // WIP antipattern? madness?
+        this.displayContainer.addEventListener("mousedown", (e) => {this.eventContainerMouseDown(this, e)}); // WIP WARNING antipattern? madness?
+        this.displayContainer.addEventListener("mousemove", (e) => {this.eventContainerMouseMove(this, e)}); // WIP WARNING antipattern? madness?
+        this.displayContainer.addEventListener("mouseup", (e) => {this.eventContainerMouseUp(this, e)}); // WIP WARNING antipattern? madness?
+        this.displayContainer.addEventListener("wheel", (e) => {this.eventContainerWheel(this, e)}); // WIP WARNING antipattern? madness?
+        document.addEventListener("keyup", (e) => {this.eventKeyUp(this, e)}); // WIP WARNING singleton
     }
 
     linkNodeElementToListeners(node) {
         var nodeElement = this.getNodeData(node).element;
-        nodeElement.addEventListener("mousedown", (e) => {this.eventNodeElementMouseDown(this, node.id, e)}); // WIP antipattern? madness?
-        nodeElement.addEventListener("mouseup", (e) => {this.eventNodeElementMouseUp(this, node.id, e)}); // WIP antipattern? madness?
+        nodeElement.addEventListener("mousedown", (e) => {this.eventNodeElementMouseDown(this, node.id, e)}); // WIP WARNING antipattern? madness?
+        nodeElement.addEventListener("mouseup", (e) => {this.eventNodeElementMouseUp(this, node.id, e)}); // WIP WARNING antipattern? madness?
     }
     linkArcElementToListeners(arc) {
         var arcElement = this.getArcData(arc).element;
-        arcElement.addEventListener("click", (e) => {this.eventArcElementClick(this, arc.id, e)}); // WIP antipattern? madness?
+        arcElement.addEventListener("click", (e) => {this.eventArcElementClick(this, arc.id, e)}); // WIP WARNING antipattern? madness?
     }
     linkGraphElementsToListeners() {
         this.graph.forEachNode((node) => {
@@ -69,7 +70,6 @@ class KeyMouseGraphDrawer extends GraphDrawer {
 
         drawer.startDragging(nodeId, createVector2D(event.clientX, event.clientY));
     }
-
     eventNodeElementMouseUp(drawer, nodeId, event) {
         event.preventDefault();
         event.stopPropagation();
@@ -89,6 +89,15 @@ class KeyMouseGraphDrawer extends GraphDrawer {
 
         var arc = drawer.graph.getArc(arcId);
         drawer.changeArcSelection(arc);
+    }
+
+    static DELETE_KEYCODES = new Set(["Delete", "Backspace"]);
+
+    eventKeyUp(drawer, event) {
+        const keyName = event.code;
+        if (KeyMouseGraphDrawer.DELETE_KEYCODES.has(keyName)) {
+            drawer.deleteSelected();
+        }
     }
 
 }
