@@ -308,4 +308,42 @@ class GraphDrawer {
         this.selectedArcs = new Set();
     }
 
+    createNode(params = {}) {
+        var node = this.graph.createNode(params);
+        this.setupNodeData(node);
+        this.generateNodeCoords(node);
+        this.createNodeElement(node);
+        this.updateNodeElementParams(node);
+
+        var nodeData = this.getNodeData(node);
+        this.updateNodeElementScale(nodeData);
+        this.updateNodeElementCoords(nodeData);
+        return node;
+    }
+    createArc(nodeFrom, nodeTo, params = {}) {
+        var arc = this.graph.createArc(nodeFrom, nodeTo, params);
+        this.setupArcData(arc);
+        this.createArcElement(arc);
+        
+        var arcData = this.getArcData(arc);
+        this.updateArcElementScale(arcData);
+        this.updateArcElementCoords(arc);
+        return arc;
+    }
+    
+    createNodeConnectedToSelectedNodes() {
+        var node = this.createNode();
+        for (var selectedNode of this.selectedNodes) {
+            this.createArc(selectedNode, node);
+        }
+        return node;
+    }
+
+    connectSelectedNodes() {
+        var nodes = this.selectedNodes.values();
+        var nodeA = nodes.next().value;
+        var nodeB = nodes.next().value;
+        return this.createArc(nodeA, nodeB);
+    }
+
 }

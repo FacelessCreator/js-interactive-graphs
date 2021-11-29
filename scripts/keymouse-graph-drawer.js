@@ -92,11 +92,27 @@ class KeyMouseGraphDrawer extends GraphDrawer {
     }
 
     static DELETE_KEYCODES = new Set(["Delete", "Backspace"]);
+    static CREATE_NODE_KEYCODES = new Set(["KeyN"]);
+    static CANCEL_KEYCODES = new Set(["Escape"]);
+    static CONNECT_KEYCODES = new Set(["KeyC"]);
 
     eventKeyUp(drawer, event) {
         const keyName = event.code;
         if (KeyMouseGraphDrawer.DELETE_KEYCODES.has(keyName)) {
             drawer.deleteSelected();
+        } else if (KeyMouseGraphDrawer.CREATE_NODE_KEYCODES.has(keyName)) {
+            var node = drawer.createNodeConnectedToSelectedNodes();
+            drawer.linkNodeElementToListeners(node);
+            drawer.graph.forEachNodeArc(node, (arc) => { // WIP WARNING levels of abstraction mixing 
+                drawer.linkArcElementToListeners(arc);
+            });
+        } else if (KeyMouseGraphDrawer.CANCEL_KEYCODES.has(keyName)) {
+            drawer.clearSelection();
+        } else if (KeyMouseGraphDrawer.CONNECT_KEYCODES.has(keyName)) {
+            if (drawer.selectedNodes.size == 2) {
+                var arc = drawer.connectSelectedNodes();
+                drawer.linkArcElementToListeners(arc);   
+            }
         }
     }
 
