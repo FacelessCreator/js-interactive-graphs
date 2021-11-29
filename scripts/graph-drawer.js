@@ -21,6 +21,7 @@ class GraphDrawer {
         this.updateGraphElementsParams();
 
         this.setupDragging();
+        this.setupSelection();
     }
 
     getNodeData(node) {
@@ -189,6 +190,7 @@ class GraphDrawer {
         this.draggingLastPoint = startPoint;
     }
     doDragging(newPoint) {
+        this.draggindWasMoved = true;
         var node = this.graph.getNode(this.draggingNodeId);
         var nodeData = this.getNodeDataById(this.draggingNodeId);
         var deltaPixels = substructVectors(newPoint, this.draggingLastPoint);
@@ -200,6 +202,7 @@ class GraphDrawer {
     }
     stopDragging() {
         this.draggingNodeId = null;
+        delete this.draggindWasMoved;
         delete this.draggingLastPoint;
     }
 
@@ -225,6 +228,53 @@ class GraphDrawer {
         this.camera.zoom += deltaZoom;
         this.updateGraphElementsCoords();
         this.updateGraphElementsScale();
+    }
+
+    setupSelection() {
+        this.selectedNodes = new Set();
+        this.selectedArcs = new Set();
+    }
+    selectNode(node) {
+        this.selectedNodes.add(node);
+        var element = this.getNodeData(node).element;
+        element.classList.add("Selected");
+    }
+    deselectNode(node) {
+        this.selectedNodes.delete(node);
+        var element = this.getNodeData(node).element;
+        element.classList.remove("Selected");
+    }
+    changeNodeSelection(node) {
+        if (this.selectedNodes.has(node)) {
+            this.deselectNode(node);
+        } else {
+            this.selectNode(node);
+        }
+    }
+    selectArc(arc) {
+        this.selectedArcs.add(arc);
+        var element = this.getArcData(arc).element;
+        element.classList.add("Selected");
+    }
+    deselectArc(arc) {
+        this.selectedArcs.delete(arc);
+        var element = this.getArcData(arc).element;
+        element.classList.remove("Selected");
+    }
+    changeArcSelection(arc) {
+        if (this.selectedArcs.has(arc)) {
+            this.deselectArc(arc);
+        } else {
+            this.selectArc(arc);
+        }
+    }
+    clearSelection() {
+        for (var node of this.selectedNodes) {
+            this.deselectNode(node);
+        }
+        for (var arc of this.selectedArcs) {
+            this.deselectArc(arc);
+        }
     }
 
 }

@@ -9,6 +9,7 @@ body {
     height: 90vh;
     position: relative;
     overflow: hidden;
+    cursor: move;
 }
 
 h1 {
@@ -21,10 +22,6 @@ h1 {
     top: 0;
 }
 
-.GraphContainer svg line {
-    cursor: pointer;
-}
-
 .GraphContainer div {
     position: absolute;
     border-radius: 50%;
@@ -32,10 +29,16 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor:grab;
+    cursor: grab;
 }
 
 .SVGArrow{
     stroke:#000000; 
-    marker-end:url(#markerArrow)
+    marker-end:url(#markerArrow);
+    cursor: pointer;
+}
+
+.GraphContainer .Selected {
+    border: 3px solid blue;
+    stroke: blue;
 }
