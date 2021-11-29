@@ -341,9 +341,16 @@ class GraphDrawer {
 
     connectSelectedNodes() {
         var nodes = this.selectedNodes.values();
-        var nodeA = nodes.next().value;
-        var nodeB = nodes.next().value;
-        return this.createArc(nodeA, nodeB);
+        var arcs = [];
+        var prevNode = null;
+        for (var newNode of nodes) {
+            if (prevNode) {
+                var arc = this.createArc(prevNode, newNode);
+                arcs.push(arc);
+            }
+            prevNode = newNode;
+        }
+        return arcs;
     }
 
 }

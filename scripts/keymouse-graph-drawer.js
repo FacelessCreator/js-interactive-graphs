@@ -109,9 +109,11 @@ class KeyMouseGraphDrawer extends GraphDrawer {
         } else if (KeyMouseGraphDrawer.CANCEL_KEYCODES.has(keyName)) {
             drawer.clearSelection();
         } else if (KeyMouseGraphDrawer.CONNECT_KEYCODES.has(keyName)) {
-            if (drawer.selectedNodes.size == 2) {
-                var arc = drawer.connectSelectedNodes();
-                drawer.linkArcElementToListeners(arc);   
+            if (drawer.selectedNodes.size >= 2) {
+                var arcs = drawer.connectSelectedNodes();
+                for (var arc of arcs) {
+                    drawer.linkArcElementToListeners(arc);
+                }
             }
         }
     }
