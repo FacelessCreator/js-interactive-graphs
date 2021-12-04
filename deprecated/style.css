@@ -1,0 +1,46 @@
+body {
+    text-align: center;
+}
+
+keymouse-graph-drawer {
+    display: block;
+    margin: 0 auto 0 auto;
+    border: 1px solid black;
+    width: 95vw;
+    height: 60vh;
+    position: relative;
+    overflow: hidden;
+    cursor: move;
+}
+
+h1 {
+    font-size: 2vh;
+}
+
+keymouse-graph-drawer svg {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+keymouse-graph-drawer div {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    background-color: white;
+}
+
+.SVGArrow{
+    stroke:#000000; 
+    marker-end:url(#markerArrow);
+    cursor: pointer;
+}
+
+keymouse-graph-drawer .Selected {
+    border: 3px solid blue;
+    stroke: blue;
+}
