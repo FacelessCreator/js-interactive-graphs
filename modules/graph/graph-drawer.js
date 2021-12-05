@@ -8,28 +8,35 @@ class GraphDrawerParamsRenderer {
 
     }
 
-    renderNodeParams(containerElement, params) {
+    renderNodeParams(nodeElement, params) {
         var text = JSON.stringify(params);
-        containerElement.innerHTML = "<p>"+text+"</p>";
+        nodeElement.innerHTML = "<p>"+text+"</p>";
     }
-    renderArcParams(containerElement, params) {
+    renderArcParams(arcElement, params) {
         var text = JSON.stringify(params);
-        containerElement.innerHTML = "<p>"+text+"</p>";
+        arcElement.innerHTML = "<p>"+text+"</p>";
     }
-    renderNodeParamsEditor(containerElement, params, onDoneEventHandler) {
-        containerElement.innerHTML = "";
+    renderNodeParamsEditor(nodeElement, params, onDoneEventHandler) {
+        nodeElement.innerHTML = "";
+        var oldParams = params;
         var textElement = document.createElement('input');
         textElement.type = 'text';
         textElement.value = JSON.stringify(params);
-        containerElement.appendChild(textElement);
+        nodeElement.appendChild(textElement);
         textElement.focus();
-        textElement.onchange = (event) => {
-            var paramsString = textElement.value;
-            try {
-                var params = JSON.parse(paramsString);
-                onDoneEventHandler(params);
-            } catch (error) {
-                // TODO
+        textElement.onkeyup = (event) => {
+            const keyName = event.code;
+            if (keyName == "Enter") {
+                var paramsString = textElement.value;
+                try {
+                    var params = JSON.parse(paramsString);
+                    onDoneEventHandler(params);
+                } catch (error) {
+                    nodeElement.setColor('#FF0000');
+                    setTimeout(() => {nodeElement.setColor('#000000')}, 500);
+                }
+            } else if (keyName == "Escape") {
+                onDoneEventHandler(oldParams);
             }
         };
     }
@@ -66,6 +73,10 @@ class GraphDrawerNodeElement extends HTMLElement {
     setCoords(x, y) {
         this.style.left = x + "px";
         this.style.top = y + "px";
+    }
+
+    setColor(color) {
+        this.style.borderColor = color;
     }
 
 }
@@ -283,7 +294,7 @@ export class GraphDrawer extends HTMLElement {
     }
 
     paintNode(node, color) {
-        this.getNodeElement(node).style.borderColor = color;
+        this.getNodeElement(node).setColor(color);
     }
     paintArc(arc, color) {
         setSVGArrowColor(this.getArcElement(arc), color);
