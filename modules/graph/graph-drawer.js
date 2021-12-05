@@ -16,6 +16,23 @@ class GraphDrawerParamsRenderer {
         var text = JSON.stringify(params);
         containerElement.innerHTML = "<p>"+text+"</p>";
     }
+    renderNodeParamsEditor(containerElement, params, onDoneEventHandler) {
+        containerElement.innerHTML = "";
+        var textElement = document.createElement('input');
+        textElement.type = 'text';
+        textElement.value = JSON.stringify(params);
+        containerElement.appendChild(textElement);
+        textElement.focus();
+        textElement.onchange = (event) => {
+            var paramsString = textElement.value;
+            try {
+                var params = JSON.parse(paramsString);
+                onDoneEventHandler(params);
+            } catch (error) {
+                // TODO
+            }
+        };
+    }
 
 }
 
@@ -203,6 +220,13 @@ export class GraphDrawer extends HTMLElement {
         });
         this.graph.forEachArc((arc) => {
             this.updateArcElementParams(arc);
+        });
+    }
+
+    updateNodeElementParamsEdit(node) {
+        var nodeElement = this.getNodeElement(node);
+        this.paramsRenderer.renderNodeParamsEditor(nodeElement, node.params, (params) => {
+            this.eventNodeEditingDone(this, node.id, params);
         });
     }
 
@@ -396,6 +420,7 @@ export class GraphDrawer extends HTMLElement {
         var nodeElement = this.getNodeElement(node);
         nodeElement.addEventListener("mousedown", (e) => {this.eventNodeElementMouseDown(this, node.id, e)}); // WIP WARNING antipattern? madness?
         nodeElement.addEventListener("mouseup", (e) => {this.eventNodeElementMouseUp(this, node.id, e)}); // WIP WARNING antipattern? madness?
+        nodeElement.addEventListener("dblclick", (e) => {this.eventNodeElementDoubleClick(this, node.id, e)}); // WIP WARNING antipattern? madness?
     }
     linkArcElementToListeners(arc) {
         var arcElement = this.getArcElement(arc);
@@ -412,10 +437,16 @@ export class GraphDrawer extends HTMLElement {
     }
 
     eventContainerMouseDown(drawer, event) {
+        if (drawer.editingMode) {
+            return;
+        }
         event.preventDefault();
         drawer.startCameraMovement(new Vector(event.clientX, event.clientY));
     }
     eventContainerMouseMove(drawer, event) {
+        if (drawer.editingMode) {
+            return;
+        }
         event.preventDefault();
         if (drawer.draggingNodeId) {
             drawer.doDragging(new Vector(event.clientX, event.clientY));
@@ -424,6 +455,9 @@ export class GraphDrawer extends HTMLElement {
         }
     }
     eventContainerMouseUp(drawer, event) {
+        if (drawer.editingMode) {
+            return;
+        }
         event.preventDefault();
         if (!this.cameraWasMoved) {
             drawer.clearSelection();
@@ -438,16 +472,25 @@ export class GraphDrawer extends HTMLElement {
     static WHEEL_ZOOM_K = -0.001;
 
     eventContainerWheel(drawer, event) {
+        if (drawer.editingMode) {
+            return;
+        }
         event.preventDefault();
         drawer.zoomCamera(event.deltaY * GraphDrawer.WHEEL_ZOOM_K);
     }
 
     eventNodeElementMouseDown(drawer, nodeId, event) {
+        if (drawer.editingMode) {
+            return;
+        }
         event.preventDefault();
         event.stopPropagation();
         drawer.startDragging(nodeId, new Vector(event.clientX, event.clientY));
     }
     eventNodeElementMouseUp(drawer, nodeId, event) {
+        if (drawer.editingMode) {
+            return;
+        }
         event.preventDefault();
         event.stopPropagation();
         if (!drawer.draggindWasMoved) {
@@ -458,12 +501,33 @@ export class GraphDrawer extends HTMLElement {
             drawer.stopDragging();
         }
     }
+    eventNodeElementDoubleClick(drawer, nodeId, event) {
+        if (drawer.editingMode) {
+            return;
+        }
+        drawer.editingMode = true;
+        var node = drawer.graph.getNode(nodeId);
+        drawer.updateNodeElementParamsEdit(node);
+    }
+
+    eventNodeEditingDone(drawer, nodeId, params) {
+        delete drawer.editingMode;
+        var node = drawer.graph.getNode(nodeId);
+        node.params = params;
+        this.updateNodeElementParams(node);
+    }
 
     eventArcElementMouseDown(drawer, arcId, event) {
+        if (drawer.editingMode) {
+            return;
+        }
         event.preventDefault();
         event.stopPropagation();
     }
     eventArcElementMouseUp(drawer, arcId, event) {
+        if (drawer.editingMode) {
+            return;
+        }
         event.preventDefault();
         event.stopPropagation();
         var arc = drawer.graph.getArc(arcId);
@@ -477,6 +541,9 @@ export class GraphDrawer extends HTMLElement {
     static REVERSE_ARC_KEYCODES = new Set(["KeyR"]);
 
     eventKeyUp(drawer, event) {
+        if (drawer.editingMode) {
+            return;
+        }
         const keyName = event.code;
         if (GraphDrawer.DELETE_KEYCODES.has(keyName)) {
             drawer.deleteSelected();
