@@ -141,17 +141,16 @@ export class Graph {
     clone() {
         var oldGraph = this;
         var newGraph = new Graph();
-        var oldToNewNode = {};
         var arcsToCopy = [];
         oldGraph.forEachNode((oldNode) => {
-            oldToNewNode[oldNode] = newGraph.createNode(oldNode.params, oldNode.id);
+            newGraph.createNode(oldNode.params, oldNode.id);
             for (var oldArc of oldNode.inputArcs) {
                 arcsToCopy.push(oldArc);
             }
         });
         for (var oldArc of arcsToCopy) {
-            var newNodeFrom = oldToNewNode[oldArc.startNode];
-            var newNodeTo = oldToNewNode[oldArc.endNode];
+            var newNodeFrom = newGraph.getNode(oldArc.startNode.id);
+            var newNodeTo = newGraph.getNode(oldArc.endNode.id);
             newGraph.createArc(newNodeFrom, newNodeTo, oldArc.params, oldArc.id);
         }
         newGraph.lastNodeId = this.lastNodeId;
@@ -226,17 +225,16 @@ export class VisualGraph extends Graph {
     clone() {
         var oldGraph = this;
         var newGraph = new VisualGraph();
-        var oldToNewNode = {};
         var arcsToCopy = [];
         oldGraph.forEachNode((oldNode) => {
-            oldToNewNode[oldNode] = newGraph.createNode(oldNode.params, oldNode.id, oldNode.coords);
+            newGraph.createNode(oldNode.params, oldNode.id, oldNode.coords);
             for (var oldArc of oldNode.inputArcs) {
                 arcsToCopy.push(oldArc);
             }
         });
         for (var oldArc of arcsToCopy) {
-            var newNodeFrom = oldToNewNode[oldArc.startNode];
-            var newNodeTo = oldToNewNode[oldArc.endNode];
+            var newNodeFrom = newGraph.getNode(oldArc.startNode.id);
+            var newNodeTo = newGraph.getNode(oldArc.endNode.id);
             newGraph.createArc(newNodeFrom, newNodeTo, oldArc.params, oldArc.id);
         }
         newGraph.lastNodeId = this.lastNodeId;
@@ -289,64 +287,50 @@ export class VersionsVisualGraph extends VisualGraph {
     }
 
     // get ids of different arcs and nodes between this graph and another graph
-    getDifferenceWithVersion(version) {
+    changeToVersion(version) {
         var changedNodeIds = new Set();
         var changedArcIds = new Set();
-        for (const [id, node] of version.nodes) {
-            if (!this.nodes.has(id) || !this.getNode(id).compare(node)) {
+        for (const [id, differentNode] of version.nodes) {
+            if (!this.nodes.has(id)) {
                 changedNodeIds.add(id);
+                this.createNode(differentNode.params, differentNode.id, differentNode.coords);
+            } else if (!this.getNode(id).compare(differentNode)) {
+                changedNodeIds.add(id);
+                var node = this.getNode(id);
+                node.params = Object.assign({}, differentNode.params);
+                node.coords = differentNode.coords.clone();
             }
         }
         for (const id of this.nodes.keys()) {
             if (!version.nodes.has(id)) {
                 changedNodeIds.add(id);
+                var node = this.getNode(id);
+                this.forEachNodeArc(node, (arc) => {
+                    changedArcIds.add(arc.id);
+                });
+                this.deleteNode(node);
             }
         }
-        for (const [id, arc] of version.arcs) {
-            if (!this.arcs.has(id) || !this.getArc(id).compare(arc)) {
+        for (const [id, differentArc] of version.arcs) {
+            if (!this.arcs.has(id)) {
                 changedArcIds.add(id);
+                var startNode = this.getNode(differentArc.startNode.id);
+                var endNode = this.getNode(differentArc.endNode.id);
+                this.createArc(startNode, endNode, differentArc.params, differentArc.id);
+            } else if (!this.getArc(id).compare(differentArc)) {
+                changedArcIds.add(id);
+                var arc = this.getArc(id);
+                arc.params = Object.assign({}, differentArc.params);
             }
         }
         for (const id of this.arcs.keys()) {
             if (!version.arcs.has(id)) {
                 changedArcIds.add(id);
+                var arc = this.getArc(id);
+                this.deleteArc(arc);
             }
         }
         return {nodes: changedNodeIds, arcs: changedArcIds};
-    }
-
-    changeToVersion(version) {
-        var changes = this.getDifferenceWithVersion(version);
-        for (const id of changes.nodes) {
-            if (!this.nodes.has(id)) {
-                var differentNode = version.getNode(id);
-                this.createNode(differentNode.params, differentNode.id, differentNode.coords);
-            } else if (!version.nodes.has(id)) {
-                var node = this.getNode(id);
-                this.deleteNode(node);
-            } else {
-                var node = this.getNode(id);
-                var differentNode = version.getNode(id);
-                node.params = Object.assign({}, differentNode.params);
-                node.coords = differentNode.coords.clone();
-            }
-        }
-        for (const id of changes.arcs) {
-            if (!this.arcs.has(id)) {
-                var differentArc = version.getArc(id);
-                var startNode = this.getNode(differentArc.startNode.id);
-                var endNode = this.getNode(differentArc.endNode.id);
-                this.createArc(startNode, endNode, differentArc.params, differentArc.id);
-            } else if (!version.arcs.has(id)) {
-                var arc = this.getArc(id);
-                this.deleteArc(arc);
-            } else {
-                var arc = this.getArc(id);
-                var differentArc = version.getArc(id);
-                arc.params = Object.assign({}, differentArc.params);
-            }
-        }
-        return changes;
     }
 
     rollback() {

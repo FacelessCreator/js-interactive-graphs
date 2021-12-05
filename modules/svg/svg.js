@@ -11,7 +11,10 @@ function setupDefinitions() {
 setupDefinitions();
 
 export function createSVG() {
-    return document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    var element = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    setSVGArrowColor(element, '#000000');
+    setSVGArrowSize(element, 1);
+    return element;
 }
 export function setSVGSize(svgElement, width, height) {
     svgElement.setAttribute('width', width);
