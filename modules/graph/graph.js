@@ -28,7 +28,7 @@ export class GraphArc {
         return JSON.stringify(this.params) === JSON.stringify(anotherArc.params);
     }
     compare(anotherArc) {
-        return this.compareParams(anotherArc);
+        return this.startNode.id == anotherArc.startNode.id && this.endNode.id == anotherArc.endNode.id && this.compareParams(anotherArc);
     }    
 }
 
@@ -320,6 +320,10 @@ export class VersionsVisualGraph extends VisualGraph {
             } else if (!this.getArc(id).compare(differentArc)) {
                 changedArcIds.add(id);
                 var arc = this.getArc(id);
+                var startNode = this.getNode(differentArc.startNode.id);
+                var endNode = this.getNode(differentArc.endNode.id);
+                arc.startNode = startNode;
+                arc.endNode = endNode;
                 arc.params = Object.assign({}, differentArc.params);
             }
         }

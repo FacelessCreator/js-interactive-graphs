@@ -637,6 +637,7 @@ export class GraphDrawer extends HTMLElement {
             var arc = this.graph.getArc(arcId);
             if (this.arcElements.has(arcId) && arc) {
                 this.updateArcElementParams(arc);
+                this.updateArcElementCoords(arc);
             } else if (this.arcElements.has(arcId)) {
                 this.deleteArcElement(arcId);
             } else {

@@ -36,3 +36,7 @@ graph-node {
     cursor: grab;
     background-color: white;
 }
+
+ul {
+    text-align: left;
+}
