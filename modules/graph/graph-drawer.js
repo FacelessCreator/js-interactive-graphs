@@ -60,7 +60,7 @@ class TextGraphDrawerParamsRenderer extends GraphDrawerParamsRenderer {
         if (text == undefined) {
             text = "";
         }
-        nodeElement.innerHTML = "<p>"+text+"</p>";
+        arcElement.innerHTML = "<p>"+text+"</p>";
     }
     renderNodeParamsEditor(nodeElement, params, onDoneEventHandler, onCancelEventHandler) {
         nodeElement.innerHTML = "";
