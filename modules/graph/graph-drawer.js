@@ -142,6 +142,7 @@ export class GraphDrawer extends HTMLElement {
         };
         this.nodeElements = new Map();
         this.arcElements = new Map();
+        this.fileName = "graph.json";
     }
     setupSVG() {
         this.svgElement = createSVG();
@@ -762,7 +763,7 @@ export class GraphDrawer extends HTMLElement {
 
     saveToJSON() {
         var json = this.graph.toJSON();
-        downloadText('graph.json', 'application/json', json);
+        downloadText(this.fileName, 'application/json', json);
     }
 
     loadFromJSON(json) {
@@ -784,6 +785,7 @@ export class GraphDrawer extends HTMLElement {
         const file = event.dataTransfer.files[0]; // WARNING unsafe
         readTextFile(file, (text) => {
             drawer.loadFromJSON(text);
+            this.fileName = file.name;
         });
         drawer.classList.remove("drag-hover");
     }
