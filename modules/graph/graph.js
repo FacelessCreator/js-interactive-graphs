@@ -118,7 +118,7 @@ export class Graph {
                 return arc;
             }
         }
-        throw "no such element";
+        throw new UserException("no such element");
     }
 
     deleteArcFromNode(arc, node) { // LOCAL FUNCTION
@@ -132,7 +132,7 @@ export class Graph {
             node.outputArcs.splice(outputPos, 1);
             return;
         }
-        throw "no such element";
+        throw new UserException("no such element");
     }
     deleteArcBetweenNodes(startNode, endNode) {
         var arc = this.findArcBetweenNodes(startNode, endNode);
@@ -405,11 +405,10 @@ export class VersionsVisualGraph extends VisualGraph {
             } else if (!this.getArc(id).compare(differentArc)) {
                 changedArcIds.add(id);
                 var arc = this.getArc(id);
+                this.deleteArc(arc);
                 var startNode = this.getNode(differentArc.startNode.id);
                 var endNode = this.getNode(differentArc.endNode.id);
-                arc.startNode = startNode;
-                arc.endNode = endNode;
-                arc.params = Object.assign({}, differentArc.params);
+                this.createArc(startNode, endNode, differentArc.params, differentArc.id);
             }
         }
         for (const id of this.arcs.keys()) {
@@ -424,7 +423,7 @@ export class VersionsVisualGraph extends VisualGraph {
 
     rollback() {
         if (this.getBackupsCount() == 0) {
-            throw "no backups left";
+            throw new UserException("no backups left");
         }
         this.createUpdate();
         var backup = this.backups.pop();
@@ -432,7 +431,7 @@ export class VersionsVisualGraph extends VisualGraph {
     }
     update() {
         if (this.getUpdatesCount() == 0) {
-            throw "no updates left";
+            throw new UserException("no updates left");
         }
         this.createBackup();
         var update = this.updates.pop();
