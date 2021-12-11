@@ -331,8 +331,8 @@ export class VisualGraph extends Graph {
 
 export class VersionsVisualGraph extends VisualGraph {
     
-    static DEFAULT_MAX_BACKUPS_COUNT = 10;
-    static DEFAULT_MAX_UPDATES_COUNT = 10;
+    static DEFAULT_MAX_BACKUPS_COUNT = 100;
+    static DEFAULT_MAX_UPDATES_COUNT = 100;
 
     constructor() {
         super();

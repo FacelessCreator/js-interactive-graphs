@@ -40,3 +40,7 @@ graph-node {
 ul {
     text-align: left;
 }
+
+.drag-hover {
+    border: 2px solid #0000FF;
+}

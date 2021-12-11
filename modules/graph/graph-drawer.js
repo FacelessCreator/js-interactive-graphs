@@ -732,6 +732,7 @@ export class GraphDrawer extends HTMLElement {
         readTextFile(file, (text) => {
             drawer.loadFromJSON(text);
         });
+        drawer.classList.remove("drag-hover");
     }
 
     eventDragOver(drawer, event) { // seems useless but without it we cannot catch drop event at all
@@ -740,11 +741,11 @@ export class GraphDrawer extends HTMLElement {
     }
 
     eventDragEnter(drawer, event) {
-        drawer.style.borderColor = "#0000FF";
+        drawer.classList.add("drag-hover");
     }
 
     eventDragLeave(drawer, event) {
-        drawer.style.borderColor = "#000000";
+        drawer.classList.remove("drag-hover");
     }
 
 }
