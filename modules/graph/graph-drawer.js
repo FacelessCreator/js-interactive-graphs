@@ -274,16 +274,28 @@ export class GraphDrawer extends HTMLElement {
         this.draggindNodeWasMoved = true;
         var node = this.graph.getNode(this.draggingNodeId);
         var deltaPixels = newPoint.substruct(this.draggingNodeLastPoint);
-        var deltaCoords = deltaPixels.multiply(1 / (GraphDrawer.METERS_TO_PIXELS_K*this.camera.zoom));
-        node.coords = node.coords.add(deltaCoords);
         this.draggingNodeLastPoint = newPoint;
-        this.updateNodeElementCoords(node);
-        this.updateArcConnectedToNodeElementsCoords(node);
+        var deltaCoords = deltaPixels.multiply(1 / (GraphDrawer.METERS_TO_PIXELS_K*this.camera.zoom));
+        if (this.selectedNodeIds.has(this.draggingNodeId)) {
+            this.applyDraggingToSelectedNodes(deltaCoords);
+        } else {
+            this.applyDraggingToNode(node, deltaCoords);
+        }
     }
     stopDraggingNode() {
         this.draggingNodeId = null;
         delete this.draggindNodeWasMoved;
         delete this.draggingNodeLastPoint;
+    }
+    applyDraggingToNode(node, deltaCoords) {
+        node.coords = node.coords.add(deltaCoords);
+        this.updateNodeElementCoords(node);
+        this.updateArcConnectedToNodeElementsCoords(node);
+    }
+    applyDraggingToSelectedNodes(deltaCoords) {
+        this.forEachSelectedNode((node) => {
+            this.applyDraggingToNode(node, deltaCoords);
+        });
     }
 
     setupCameraMovement() {
@@ -455,10 +467,9 @@ export class GraphDrawer extends HTMLElement {
         }
         if (this.selectedNodeIds.size == 1) {
             var randomVector = new Vector(Math.random()-0.5, Math.random()-0.5);
-            randomVector = randomVector.multiply(GraphDrawer.NODE_ELEMENT_WIDTH / GraphDrawer.METERS_TO_PIXELS_K);
             nodeCoords = nodeCoords.add(randomVector);
         } else if (this.selectedNodeIds.size == 0) {
-            nodeCoords = this.camera.coords.multiply(1 / GraphDrawer.METERS_TO_PIXELS_K);
+            nodeCoords = this.camera.coords.multiply(1 / (GraphDrawer.METERS_TO_PIXELS_K * this.camera.zoom));
         }
         var node = this.createNode({}, nodeCoords);
         this.forEachSelectedNode((selectedNode) => {
