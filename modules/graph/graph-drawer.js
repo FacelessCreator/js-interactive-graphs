@@ -87,21 +87,6 @@ class TextGraphDrawerParamsRenderer extends GraphDrawerParamsRenderer {
 
 }
 
-class GraphDrawerNodesPlacer {
-    constructor() {
-
-    }
-
-    placeNode(node) {
-        node.coords = new Vector();
-    }
-    placeGraphNodes(graph) {
-        graph.forEachNode((node) => {
-            this.placeNode(node);
-        });
-    }
-}
-
 class GraphDrawerNodeElement extends HTMLElement {
     
     constructor() {
@@ -151,7 +136,6 @@ export class GraphDrawer extends HTMLElement {
     setupVariables() {
         this.graph = new VersionsVisualGraph();
         this.paramsRenderer = new TextGraphDrawerParamsRenderer(); //new GraphDrawerParamsRenderer();
-        this.nodesPlacer = new GraphDrawerNodesPlacer();
         this.camera = {
             coords: new Vector(), // pixels
             zoom: 1
@@ -443,9 +427,9 @@ export class GraphDrawer extends HTMLElement {
         this.selectedNodeIds.clear();
     }
 
-    createNode(params = {}) {
+    createNode(params = {}, coords = new Vector()) {
         var node = this.graph.createNode(params);
-        this.nodesPlacer.placeNode(node);
+        node.coords = coords;
         this.createNodeElement(node);
         this.updateNodeElementParams(node);
         this.updateNodeElementScale(node);
@@ -462,7 +446,21 @@ export class GraphDrawer extends HTMLElement {
     }
 
     createNodeConnectedToSelectedNodes() {
-        var node = this.createNode();
+        var nodeCoords = new Vector();
+        if (this.selectedNodeIds.size > 0) {
+            this.forEachSelectedNode((selectedNode) => {
+                nodeCoords = nodeCoords.add(selectedNode.coords);
+            });
+            nodeCoords = nodeCoords.multiply(1 / this.selectedNodeIds.size);   
+        }
+        if (this.selectedNodeIds.size == 1) {
+            var randomVector = new Vector(Math.random()-0.5, Math.random()-0.5);
+            randomVector = randomVector.multiply(GraphDrawer.NODE_ELEMENT_WIDTH / GraphDrawer.METERS_TO_PIXELS_K);
+            nodeCoords = nodeCoords.add(randomVector);
+        } else if (this.selectedNodeIds.size == 0) {
+            nodeCoords = this.camera.coords.multiply(1 / GraphDrawer.METERS_TO_PIXELS_K);
+        }
+        var node = this.createNode({}, nodeCoords);
         this.forEachSelectedNode((selectedNode) => {
             this.createArc(selectedNode, node);
         });
