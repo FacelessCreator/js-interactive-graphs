@@ -3,14 +3,18 @@ body {
 }
 
 graph-drawer {
-    display: block;
+    display: inline-block;
     margin: 0 auto 0 auto;
     border: 2px solid black;
-    width: 95vw;
-    height: 70vh;
+    width: 45vw;
+    height: 40vh;
     position: relative;
     overflow: hidden;
     cursor: move;
+}
+
+graph-drawer:focus {
+    border: 2px solid #0000FF;
 }
 
 h1 {
@@ -43,6 +47,6 @@ ul {
     text-align: left;
 }
 
-.drag-hover {
-    border: 2px solid #0000FF;
+.drag-hover svg {
+    background-color: #acb8ff;
 }

@@ -127,6 +127,7 @@ export class GraphDrawer extends HTMLElement {
         this.setupDraggingNode();
         this.setupSelection();
 
+        this.setupFocus();
         this.linkGraphElementsToListeners();
         this.linkContainterToListeners();
 
@@ -499,13 +500,17 @@ export class GraphDrawer extends HTMLElement {
         });
     }
 
+    setupFocus() {
+        this.setAttribute("tabindex", 0); // this thing allows you to setup key events directly on object to incapsulate them
+    }
+
     linkContainterToListeners() {
         this.addEventListener("mousedown", (e) => {this.eventContainerMouseDown(this, e)}); // WIP WARNING antipattern? madness?
         this.addEventListener("mousemove", (e) => {this.eventContainerMouseMove(this, e)}); // WIP WARNING antipattern? madness?
         this.addEventListener("mouseup", (e) => {this.eventContainerMouseUp(this, e)}); // WIP WARNING antipattern? madness?
         this.addEventListener("wheel", (e) => {this.eventContainerWheel(this, e)}); // WIP WARNING antipattern? madness?
-        document.addEventListener("keyup", (e) => {this.eventKeyUp(this, e)}); // WIP WARNING singleton
-        document.addEventListener("keydown", (e) => {this.eventKeyDown(this, e)}); // WIP WARNING singleton
+        this.addEventListener("keyup", (e) => {this.eventKeyUp(this, e)}); // WIP WARNING singleton
+        this.addEventListener("keydown", (e) => {this.eventKeyDown(this, e)}); // WIP WARNING singleton
     }
 
     linkNodeElementToListeners(node) {
@@ -533,6 +538,7 @@ export class GraphDrawer extends HTMLElement {
             return;
         }
         event.preventDefault();
+        drawer.focus();
         drawer.startCameraMovement(new Vector(event.clientX, event.clientY));
     }
     eventContainerMouseMove(drawer, event) {
@@ -564,7 +570,7 @@ export class GraphDrawer extends HTMLElement {
     static WHEEL_ZOOM_K = -0.001;
 
     eventContainerWheel(drawer, event) {
-        if (drawer.editingMode) {
+        if (drawer.editingMode || document.activeElement != drawer) {
             return;
         }
         event.preventDefault();
@@ -607,12 +613,14 @@ export class GraphDrawer extends HTMLElement {
         delete drawer.editingMode;
         var node = drawer.graph.getNode(nodeId);
         node.params = params;
-        this.updateNodeElementParams(node);
+        drawer.updateNodeElementParams(node);
+        drawer.focus();
     }
     eventNodeEditingCancel(drawer, nodeId) {
         delete drawer.editingMode;
         var node = drawer.graph.getNode(nodeId);
-        this.updateNodeElementParams(node);
+        drawer.updateNodeElementParams(node);
+        drawer.focus();
     }
 
     eventArcElementMouseDown(drawer, arcId, event) {
