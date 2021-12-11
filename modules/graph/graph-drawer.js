@@ -43,6 +43,50 @@ class GraphDrawerParamsRenderer {
 
 }
 
+class TextGraphDrawerParamsRenderer extends GraphDrawerParamsRenderer {
+    constructor() {
+        super();
+    }
+
+    renderNodeParams(nodeElement, params) {
+        var text = params.text;
+        if (text == undefined) {
+            text = "";
+        }
+        nodeElement.innerHTML = "<p>"+text+"</p>";
+    }
+    renderArcParams(arcElement, params) {
+        var text = params.text;
+        if (text == undefined) {
+            text = "";
+        }
+        nodeElement.innerHTML = "<p>"+text+"</p>";
+    }
+    renderNodeParamsEditor(nodeElement, params, onDoneEventHandler, onCancelEventHandler) {
+        nodeElement.innerHTML = "";
+        var textElement = document.createElement('input');
+        textElement.type = 'text';
+        var oldTextValue = params.text;
+        if (oldTextValue == undefined) {
+            oldTextValue = "";
+        }
+        textElement.value = oldTextValue;
+        nodeElement.appendChild(textElement);
+        textElement.focus();
+        textElement.onkeyup = (event) => {
+            const keyName = event.code;
+            if (keyName == "Enter") {
+                var textValue = textElement.value;
+                var params = {text: textValue};
+                onDoneEventHandler(params);
+            } else if (keyName == "Escape") {
+                onCancelEventHandler();
+            }
+        };
+    }
+
+}
+
 class GraphDrawerNodesPlacer {
     constructor() {
 
@@ -106,7 +150,7 @@ export class GraphDrawer extends HTMLElement {
 
     setupVariables() {
         this.graph = new VersionsVisualGraph();
-        this.paramsRenderer = new GraphDrawerParamsRenderer();
+        this.paramsRenderer = new TextGraphDrawerParamsRenderer(); //new GraphDrawerParamsRenderer();
         this.nodesPlacer = new GraphDrawerNodesPlacer();
         this.camera = {
             coords: new Vector(), // pixels
