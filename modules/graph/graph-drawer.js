@@ -307,9 +307,9 @@ export class GraphDrawer extends HTMLElement {
     }
 
     zoomCamera(deltaZoom) {
-        this.camera.zoom += deltaZoom;
-        if (this.camera.zoom <= 0) {
-            this.camera.zoom -= deltaZoom;
+        if (this.camera.zoom + deltaZoom > 0) {
+            this.camera.zoom += deltaZoom;
+            this.camera.coords = this.camera.coords.multiply(this.camera.zoom / (this.camera.zoom - deltaZoom));
         }
         this.updateGraphElementsCoords();
         this.updateGraphElementsScale();
