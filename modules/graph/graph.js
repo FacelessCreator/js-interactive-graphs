@@ -14,6 +14,21 @@ export class GraphNode {
     compare(anotherNode) {
         return this.compareParams(anotherNode);
     }
+
+    toSerializableObject() {
+        var jsonObject = {};
+        jsonObject.id = this.id;
+        jsonObject.params = Object.assign({}, this.params);
+        jsonObject.inputArcs = [];
+        jsonObject.outputArcs = [];
+        for (var arc of this.inputArcs) {
+            jsonObject.inputArcs.push(arc.id);
+        }
+        for (var arc of this.outputArcs) {
+            jsonObject.outputArcs.push(arc.id);
+        }
+        return jsonObject;
+    }
 }
 
 export class GraphArc {
@@ -29,7 +44,16 @@ export class GraphArc {
     }
     compare(anotherArc) {
         return this.startNode.id == anotherArc.startNode.id && this.endNode.id == anotherArc.endNode.id && this.compareParams(anotherArc);
-    }    
+    }  
+    
+    toSerializableObject() {
+        var jsonObject = {};
+        jsonObject.id = this.id;
+        jsonObject.startNode = this.startNode.id;
+        jsonObject.endNode = this.endNode.id;
+        jsonObject.params = Object.assign({}, this.params);
+        return jsonObject;
+    }
 }
 
 export class Graph {
@@ -169,6 +193,44 @@ export class Graph {
         endNode.outputArcs.push(arc);
     }
 
+    clear() {
+        this.forEachNode((node) => {
+            this.deleteNode(node);
+        });
+        this.lastNodeId = 0;
+        this.lastArcId = 0;
+    }
+
+    fromJSON(json) {
+        var jsonObject = JSON.parse(json);
+        this.clear();
+        for (var serializableNode of jsonObject.nodes) {
+            this.createNode(serializableNode.params, serializableNode.id);
+        }
+        for (var serializableArc of jsonObject.arcs) {
+            var startNode = this.getNode(serializableArc.startNode);
+            var endNode = this.getNode(serializableArc.endNode);
+            this.createArc(startNode, endNode, serializableArc.params, serializableArc.id);
+        }
+    }
+
+    toJSON() {
+        var jsonObject = {
+            nodes: [],
+            arcs: []
+        };
+        this.forEachNode((node) => {
+            var serializableNode = node.toSerializableObject();
+            jsonObject.nodes.push(serializableNode);
+        });
+        this.forEachArc((arc) => {
+            var serializableArc = arc.toSerializableObject();
+            jsonObject.arcs.push(serializableArc);
+        });
+        var json = JSON.stringify(jsonObject);
+        return json;
+    }
+
 }
 
 export class VisualGraphNode extends GraphNode {
@@ -181,6 +243,12 @@ export class VisualGraphNode extends GraphNode {
     compare(anotherNode) {
         return super.compare(anotherNode) && this.coords.compare(anotherNode.coords);
     }
+
+    toSerializableObject() {
+        var jsonObject = super.toSerializableObject();
+        jsonObject.coords = this.coords;
+        return jsonObject;
+    }
 }
 
 export class VisualGraphArc extends GraphArc {
@@ -189,6 +257,10 @@ export class VisualGraphArc extends GraphArc {
         super(startNode, endNode, id, params);
     }
     
+    toSerializableObject() {
+        var jsonObject = super.toSerializableObject();
+        return jsonObject;
+    }
 }
 
 export class VisualGraph extends Graph {
@@ -240,6 +312,19 @@ export class VisualGraph extends Graph {
         newGraph.lastNodeId = this.lastNodeId;
         newGraph.lastArcId = this.lastArcId;
         return newGraph;
+    }
+
+    fromJSON(json) {
+        var jsonObject = JSON.parse(json);
+        this.clear();
+        for (var serializableNode of jsonObject.nodes) {
+            this.createNode(serializableNode.params, serializableNode.id, Object.assign(new Vector(), serializableNode.coords));
+        }
+        for (var serializableArc of jsonObject.arcs) {
+            var startNode = this.getNode(serializableArc.startNode);
+            var endNode = this.getNode(serializableArc.endNode);
+            this.createArc(startNode, endNode, serializableArc.params, serializableArc.id);
+        }
     }
 
 }
@@ -352,6 +437,25 @@ export class VersionsVisualGraph extends VisualGraph {
         this.createBackup();
         var update = this.updates.pop();
         return this.changeToVersion(update);
+    }
+
+    fromJSON(json) {
+        var changedNodeIds = new Set();
+        var changedArcIds = new Set();
+        this.forEachNode((node) => {
+            changedNodeIds.add(node.id);
+        });
+        this.forEachArc((arc) => {
+            changedArcIds.add(arc.id);
+        });
+        super.fromJSON(json);
+        this.forEachNode((node) => {
+            changedNodeIds.add(node.id);
+        });
+        this.forEachArc((arc) => {
+            changedArcIds.add(arc.id);
+        });
+        return {nodes: changedNodeIds, arcs: changedArcIds};
     }
 
 }

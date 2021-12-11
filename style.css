@@ -5,7 +5,7 @@ body {
 graph-drawer {
     display: block;
     margin: 0 auto 0 auto;
-    border: 1px solid black;
+    border: 2px solid black;
     width: 95vw;
     height: 70vh;
     position: relative;

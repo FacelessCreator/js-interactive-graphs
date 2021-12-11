@@ -2,6 +2,7 @@
 import {Vector} from '../vector/vector.js';
 import {VersionsVisualGraph} from '../graph/graph.js';
 import {createSVG, setSVGSize, createSVGArrow, replaceSVGArrow, setSVGArrowSize, setSVGArrowColor} from '../svg/svg.js';
+import {downloadText, readTextFile} from '../file/file.js';
 
 class GraphDrawerParamsRenderer {
     constructor() {
@@ -94,11 +95,13 @@ export class GraphDrawer extends HTMLElement {
         this.setupVariables();
         this.setupSVG();
 
-        this.setupDragging();
+        this.setupDraggingNode();
         this.setupSelection();
 
         this.linkGraphElementsToListeners();
         this.linkContainterToListeners();
+
+        this.setupDragging();
     }
 
     setupVariables() {
@@ -229,30 +232,30 @@ export class GraphDrawer extends HTMLElement {
         });
     }
 
-    setupDragging() {
+    setupDraggingNode() {
         this.draggingNodeId = null;
     }
-    startDragging(nodeId, startPoint) {
+    startDraggingNode(nodeId, startPoint) {
         this.draggingNodeId = nodeId;
-        this.draggingLastPoint = startPoint;
+        this.draggingNodeLastPoint = startPoint;
     }
-    doDragging(newPoint) {
-        if (!this.draggindWasMoved) {
+    doDraggingNode(newPoint) {
+        if (!this.draggindNodeWasMoved) {
             this.saveChanges();
         }
-        this.draggindWasMoved = true;
+        this.draggindNodeWasMoved = true;
         var node = this.graph.getNode(this.draggingNodeId);
-        var deltaPixels = newPoint.substruct(this.draggingLastPoint);
+        var deltaPixels = newPoint.substruct(this.draggingNodeLastPoint);
         var deltaCoords = deltaPixels.multiply(1 / (GraphDrawer.METERS_TO_PIXELS_K*this.camera.zoom));
         node.coords = node.coords.add(deltaCoords);
-        this.draggingLastPoint = newPoint;
+        this.draggingNodeLastPoint = newPoint;
         this.updateNodeElementCoords(node);
         this.updateArcConnectedToNodeElementsCoords(node);
     }
-    stopDragging() {
+    stopDraggingNode() {
         this.draggingNodeId = null;
-        delete this.draggindWasMoved;
-        delete this.draggingLastPoint;
+        delete this.draggindNodeWasMoved;
+        delete this.draggingNodeLastPoint;
     }
 
     setupCameraMovement() {
@@ -448,6 +451,7 @@ export class GraphDrawer extends HTMLElement {
         this.addEventListener("mouseup", (e) => {this.eventContainerMouseUp(this, e)}); // WIP WARNING antipattern? madness?
         this.addEventListener("wheel", (e) => {this.eventContainerWheel(this, e)}); // WIP WARNING antipattern? madness?
         document.addEventListener("keyup", (e) => {this.eventKeyUp(this, e)}); // WIP WARNING singleton
+        document.addEventListener("keydown", (e) => {this.eventKeyDown(this, e)}); // WIP WARNING singleton
     }
 
     linkNodeElementToListeners(node) {
@@ -483,7 +487,7 @@ export class GraphDrawer extends HTMLElement {
         }
         event.preventDefault();
         if (drawer.draggingNodeId) {
-            drawer.doDragging(new Vector(event.clientX, event.clientY));
+            drawer.doDraggingNode(new Vector(event.clientX, event.clientY));
         } else if (drawer.isCameraMoving) {
             drawer.doCameraMovement(new Vector(event.clientX, event.clientY), 1);
         }
@@ -497,7 +501,7 @@ export class GraphDrawer extends HTMLElement {
             drawer.clearSelection();
         }
         if (drawer.draggingNodeId) {
-            drawer.stopDragging();
+            drawer.stopDraggingNode();
         } else if (drawer.isCameraMoving) {
             drawer.stopCameraMovement();
         }
@@ -519,7 +523,7 @@ export class GraphDrawer extends HTMLElement {
         }
         event.preventDefault();
         event.stopPropagation();
-        drawer.startDragging(nodeId, new Vector(event.clientX, event.clientY));
+        drawer.startDraggingNode(nodeId, new Vector(event.clientX, event.clientY));
     }
     eventNodeElementMouseUp(drawer, nodeId, event) {
         if (drawer.editingMode) {
@@ -527,12 +531,12 @@ export class GraphDrawer extends HTMLElement {
         }
         event.preventDefault();
         event.stopPropagation();
-        if (!drawer.draggindWasMoved) {
+        if (!drawer.draggindNodeWasMoved) {
             var node = drawer.graph.getNode(nodeId);
             drawer.changeNodeSelection(node);
         }
         if (drawer.draggingNodeId) {
-            drawer.stopDragging();
+            drawer.stopDraggingNode();
         }
     }
     eventNodeElementDoubleClick(drawer, nodeId, event) {
@@ -615,16 +619,22 @@ export class GraphDrawer extends HTMLElement {
         }
     }
 
+    eventKeyDown(drawer, event) {
+        if (drawer.editingMode) {
+            return;
+        }
+        const keyName = event.code;
+        if (keyName == "KeyS" && event.ctrlKey) {
+            event.preventDefault();
+            drawer.saveToJSON();
+        }
+    }
+
     updateGraphChangedElements(changes) {
+        // create new nodes
         for (var nodeId of changes.nodes) {
             var node = this.graph.getNode(nodeId);
-            if (this.nodeElements.has(nodeId) && node) {
-                this.updateNodeElementCoords(node);
-                this.updateNodeElementParams(node);
-                this.updateArcConnectedToNodeElementsCoords(node);
-            } else if (this.nodeElements.has(nodeId)) {
-                this.deleteNodeElement(nodeId);
-            } else {
+            if (!this.nodeElements.has(nodeId) && node) {
                 this.createNodeElement(node);
                 this.updateNodeElementCoords(node);
                 this.updateNodeElementScale(node);
@@ -632,15 +642,10 @@ export class GraphDrawer extends HTMLElement {
                 this.linkNodeElementToListeners(node);
             }
         }
-        this.removeNonExistentNodesFromSelection();
+        // create new arcs
         for (var arcId of changes.arcs) {
             var arc = this.graph.getArc(arcId);
-            if (this.arcElements.has(arcId) && arc) {
-                this.updateArcElementParams(arc);
-                this.updateArcElementCoords(arc);
-            } else if (this.arcElements.has(arcId)) {
-                this.deleteArcElement(arcId);
-            } else {
+            if (!this.arcElements.has(arcId) && arc) {
                 this.createArcElement(arc);
                 this.updateArcElementCoords(arc);
                 this.updateArcElementScale(arc);
@@ -648,6 +653,39 @@ export class GraphDrawer extends HTMLElement {
                 this.linkArcElementToListeners(arc);
             }
         }
+        // update existing nodes
+        for (var nodeId of changes.nodes) {
+            var node = this.graph.getNode(nodeId);
+            if (this.nodeElements.has(nodeId) && node) {
+                this.updateNodeElementCoords(node);
+                this.updateNodeElementParams(node);
+                this.updateArcConnectedToNodeElementsCoords(node);
+            }
+        }
+        // update existing arcs
+        for (var arcId of changes.arcs) {
+            var arc = this.graph.getArc(arcId);
+            if (this.arcElements.has(arcId) && arc) {
+                this.updateArcElementParams(arc);
+                this.updateArcElementCoords(arc);
+            }
+        }
+        // delete old arcs
+        for (var arcId of changes.arcs) {
+            var arc = this.graph.getArc(arcId);
+            if (this.arcElements.has(arcId) && !arc) {
+                this.deleteArcElement(arcId);
+            }
+        }
+        // delete old nodes
+        for (var nodeId of changes.nodes) {
+            var node = this.graph.getNode(nodeId);
+            if (this.nodeElements.has(nodeId) && !node) {
+                this.deleteNodeElement(nodeId);
+            }
+        }
+        // update selection
+        this.removeNonExistentNodesFromSelection();
         this.removeNonExistentArcsFromSelection();
     }
 
@@ -667,6 +705,46 @@ export class GraphDrawer extends HTMLElement {
     saveChanges() {
         this.graph.createBackup();
         this.graph.forgetUpdates();
+    }
+
+    saveToJSON() {
+        var json = this.graph.toJSON();
+        downloadText('graph.json', 'application/json', json);
+    }
+
+    loadFromJSON(json) {
+        this.saveChanges();
+        var changes = this.graph.fromJSON(json);
+        this.updateGraphChangedElements(changes);
+    }
+
+    setupDragging() {
+        this.ondrop = (e) => {this.eventDragDrop(this, e)};
+        this.ondragenter = (e) => {this.eventDragEnter(this, e)};
+        this.ondragover = (e) => {this.eventDragOver(this, e)};
+        this.ondragleave = (e) => {this.eventDragLeave(this, e)};
+    }
+
+    eventDragDrop(drawer, event) {
+        event.stopPropagation();
+        event.preventDefault();
+        const file = event.dataTransfer.files[0]; // WARNING unsafe
+        readTextFile(file, (text) => {
+            drawer.loadFromJSON(text);
+        });
+    }
+
+    eventDragOver(drawer, event) { // seems useless but without it we cannot catch drop event at all
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    eventDragEnter(drawer, event) {
+        drawer.style.borderColor = "#0000FF";
+    }
+
+    eventDragLeave(drawer, event) {
+        drawer.style.borderColor = "#000000";
     }
 
 }
