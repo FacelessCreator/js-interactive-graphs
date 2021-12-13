@@ -8,8 +8,8 @@ class Vector {
     getLength() {
         return Math.sqrt(this.x*this.x+this.y*this.y);
     }
-    setLength(length) {
-        var oldLength = this.getLength(vect);
+    setLength(newLength) {
+        var oldLength = this.getLength();
         return new Vector(this.x * newLength / oldLength, this.y * newLength / oldLength);
     }
 

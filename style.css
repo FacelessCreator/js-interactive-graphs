@@ -1,5 +1,6 @@
 body {
     text-align: center;
+    font-size: 15px;
 }
 
 graph-drawer {
@@ -36,22 +37,28 @@ graph-drawer svg line {
 graph-node {
     position: absolute;
     border: 1px solid black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: inline;
     cursor: grab;
     background-color: white;
     transform: translate(-50%, -50%);
+    min-width: 6em;
+    min-height: 6em;
+    max-width: 14em;
+    max-height: 14em;
+    font-size: 1em;
 }
 
 graph-arc {
     position: absolute;
-    display: flex;
+    display: inline;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transform: translate(-50%, -50%);
     background-color: white;
+    max-width: 14em;
+    max-height: 7em;
+    font-size: 1em;
 }
 
 graph-node p {

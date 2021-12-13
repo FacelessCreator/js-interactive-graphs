@@ -138,12 +138,6 @@ class GraphDrawerNodeElement extends HTMLElement {
         super();
     }
 
-    setSize(width, height) {
-        this.style.width = width + "px";
-        this.style.height = height + "px";
-        this.style.borderWidth = Math.min(width, height) * 0.04 + "px";
-    }
-
     setCoords(x, y) {
         this.style.left = x + "px";
         this.style.top = y + "px";
@@ -161,11 +155,6 @@ class GraphDrawerArcElement extends HTMLElement {
         super();
     }
 
-    setSize(width, height) {
-        //this.style.width = width + "px";
-        //this.style.height = height + "px";
-    }
-
     setCoords(x, y) {
         this.style.left = x + "px";
         this.style.top = y + "px";
@@ -181,9 +170,7 @@ customElements.define('graph-arc', GraphDrawerArcElement);
 export class GraphDrawer extends HTMLElement {
 
     static METERS_TO_PIXELS_K = 50;
-    static NODE_ELEMENT_WIDTH = 80; // in pixels
-    static NODE_ELEMENT_HEIGHT = 50; // in pixels
-    static ARC_ELEMENT_SIZE = 15; // in pixels
+    static ARROW_ELEMENT_SIZE = 15; // in pixels
 
     constructor() {
         super();
@@ -255,25 +242,12 @@ export class GraphDrawer extends HTMLElement {
         return element;
     }
 
-    updateNodeElementScale(node) {
-        var width = 2*(GraphDrawer.NODE_ELEMENT_WIDTH * this.camera.zoom);
-        var height = 2*(GraphDrawer.NODE_ELEMENT_HEIGHT * this.camera.zoom);
-        this.getNodeElement(node).setSize(width, height);
-    }
-    updateArcElementScale(arc) {
-        var width = 2*(GraphDrawer.NODE_ELEMENT_WIDTH * this.camera.zoom);
-        var height = 0.5*(GraphDrawer.NODE_ELEMENT_HEIGHT * this.camera.zoom);
-        this.getArcElement(arc).setSize(width, height);
-    }
     updateArrowElementScale(arc) {
-        setSVGArrowSize(this.getArrowElement(arc), GraphDrawer.ARC_ELEMENT_SIZE*this.camera.zoom)
+        setSVGArrowSize(this.getArrowElement(arc), GraphDrawer.ARROW_ELEMENT_SIZE*this.camera.zoom)
     }
     updateGraphElementsScale() {
-        this.graph.forEachNode((node) => {
-            this.updateNodeElementScale(node);
-        });
+        this.style.fontSize = this.camera.zoom + "em";
         this.graph.forEachArc((arc) => {
-            this.updateArcElementScale(arc);
             this.updateArrowElementScale(arc);
         });
     }
@@ -308,14 +282,9 @@ export class GraphDrawer extends HTMLElement {
             endNodeElement.offsetLeft,
             endNodeElement.offsetTop
         );
-        // arrow should be some smaller to point from node border to node border not point to point
-        var delta = toPoint.substruct(fromPoint);
-        var angle = delta.getAngle();
-        var nodeRadius = Math.sqrt(GraphDrawer.NODE_ELEMENT_HEIGHT*GraphDrawer.NODE_ELEMENT_HEIGHT+GraphDrawer.NODE_ELEMENT_WIDTH*GraphDrawer.NODE_ELEMENT_WIDTH) * this.camera.zoom;
-        fromPoint.x += nodeRadius * Math.cos(angle);
-        toPoint.x -= nodeRadius * Math.cos(angle);
-        fromPoint.y += nodeRadius * Math.sin(angle);
-        toPoint.y -= nodeRadius * Math.sin(angle);
+        var endNodeRadius = Math.sqrt(Math.pow(endNodeElement.offsetWidth, 2)+Math.pow(endNodeElement.offsetHeight, 2));
+        var delta = toPoint.substruct(fromPoint).setLength(0.5).multiply(endNodeRadius);
+        toPoint = toPoint.substruct(delta);
         var arrowElement = this.getArrowElement(arc);
         replaceSVGArrow(arrowElement, fromPoint, toPoint);
     }
@@ -560,7 +529,6 @@ export class GraphDrawer extends HTMLElement {
         node.coords = coords;
         this.createNodeElement(node);
         this.updateNodeElementParams(node);
-        this.updateNodeElementScale(node);
         this.updateNodeElementCoords(node);
         return node;
     }
@@ -575,7 +543,6 @@ export class GraphDrawer extends HTMLElement {
         this.updateArrowElementCoords(arc);
         // arc element
         this.createArcElement(arc);
-        this.updateArcElementScale(arc);
         this.updateArcElementCoords(arc);
         this.updateArcElementParams(arc);
         return arc;
@@ -857,7 +824,6 @@ export class GraphDrawer extends HTMLElement {
             if (!this.nodeElements.has(nodeId) && node) {
                 this.createNodeElement(node);
                 this.updateNodeElementCoords(node);
-                this.updateNodeElementScale(node);
                 this.updateNodeElementParams(node);
                 this.linkNodeElementToListeners(node);
             }
@@ -875,7 +841,6 @@ export class GraphDrawer extends HTMLElement {
                 this.linkArrowElementToListeners(arc);
                 // arc element
                 this.createArcElement(arc);
-                this.updateArcElementScale(arc);
                 this.updateArcElementCoords(arc);
                 this.updateArcElementParams(arc);
                 this.linkArcElementToListeners(arc);
