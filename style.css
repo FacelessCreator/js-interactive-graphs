@@ -7,8 +7,8 @@ graph-drawer {
     display: inline-block;
     margin: 0 auto 0 auto;
     border: 2px solid black;
-    width: 45vw;
-    height: 40vh;
+    width: 95vw;
+    height: 85vh;
     position: relative;
     overflow: hidden;
     cursor: move;
@@ -19,7 +19,13 @@ graph-drawer:focus {
 }
 
 h1 {
-    font-size: 2vh;
+    font-size: 1.2em;
+    margin: 0.2em;
+}
+
+h2 {
+    font-size: 1.1em;
+    margin: 0.1em;
 }
 
 graph-drawer svg {
@@ -37,14 +43,16 @@ graph-drawer svg line {
 graph-node {
     position: absolute;
     border: 1px solid black;
-    display: inline;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: grab;
     background-color: white;
     transform: translate(-50%, -50%);
     min-width: 6em;
     min-height: 6em;
-    max-width: 14em;
-    max-height: 14em;
+    max-width: 10em;
+    max-height: 10em;
     font-size: 1em;
 }
 
@@ -56,8 +64,8 @@ graph-arc {
     cursor: pointer;
     transform: translate(-50%, -50%);
     background-color: white;
-    max-width: 14em;
-    max-height: 7em;
+    max-width: 10em;
+    max-height: 5em;
     font-size: 1em;
 }
 
@@ -71,6 +79,9 @@ graph-arc p {
     padding: 0;
 }
 
+body div {
+    margin: 0 auto 0 auto;
+}
 
 ul {
     text-align: left;
