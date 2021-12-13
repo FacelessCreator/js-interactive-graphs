@@ -1,7 +1,7 @@
 
 import {Vector} from '../vector/vector.js';
 import {VersionsVisualGraph} from '../graph/graph.js';
-import {createSVG, setSVGSize, createSVGArrow, replaceSVGArrow, setSVGArrowSize, setSVGArrowColor} from '../svg/svg.js';
+import {createSVG, createSVGArrow, replaceSVGArrow, setSVGArrowSize, setSVGArrowColor} from '../svg/svg.js';
 import {downloadText, readTextFile} from '../file/file.js';
 
 class GraphDrawerParamsRenderer {
@@ -13,9 +13,9 @@ class GraphDrawerParamsRenderer {
         var text = JSON.stringify(params);
         nodeElement.innerHTML = "<p>"+text+"</p>";
     }
-    renderArcParams(arcElement, params) {
+    renderArcParams(arrowElement, params) {
         var text = JSON.stringify(params);
-        arcElement.innerHTML = "<p>"+text+"</p>";
+        arrowElement.innerHTML = "<p>"+text+"</p>";
     }
     renderNodeParamsEditor(nodeElement, params, onDoneEventHandler, onCancelEventHandler) {
         nodeElement.innerHTML = "";
@@ -40,6 +40,29 @@ class GraphDrawerParamsRenderer {
             }
         };
     }
+    renderArcParamsEditor(arcElement, params, onDoneEventHandler, onCancelEventHandler) {
+        arcElement.innerHTML = "";
+        var textElement = document.createElement('input');
+        textElement.type = 'text';
+        textElement.value = JSON.stringify(params);
+        arcElement.appendChild(textElement);
+        textElement.focus();
+        textElement.onkeyup = (event) => {
+            const keyName = event.code;
+            if (keyName == "Enter") {
+                var paramsString = textElement.value;
+                try {
+                    var params = JSON.parse(paramsString);
+                    onDoneEventHandler(params);
+                } catch (error) {
+                    arcElement.setColor('#FF0000');
+                    setTimeout(() => {arcElement.setColor('#000000')}, 500);
+                }
+            } else if (keyName == "Escape") {
+                onCancelEventHandler();
+            }
+        };
+    }
 
 }
 
@@ -55,12 +78,12 @@ class TextGraphDrawerParamsRenderer extends GraphDrawerParamsRenderer {
         }
         nodeElement.innerHTML = "<p>"+text+"</p>";
     }
-    renderArcParams(arcElement, params) {
+    renderArcParams(arrowElement, params) {
         var text = params.text;
         if (text == undefined) {
             text = "";
         }
-        arcElement.innerHTML = "<p>"+text+"</p>";
+        arrowElement.innerHTML = "<p>"+text+"</p>";
     }
     renderNodeParamsEditor(nodeElement, params, onDoneEventHandler, onCancelEventHandler) {
         nodeElement.innerHTML = "";
@@ -72,6 +95,28 @@ class TextGraphDrawerParamsRenderer extends GraphDrawerParamsRenderer {
         }
         textElement.value = oldTextValue;
         nodeElement.appendChild(textElement);
+        textElement.focus();
+        textElement.onkeyup = (event) => {
+            const keyName = event.code;
+            if (keyName == "Enter") {
+                var textValue = textElement.value;
+                var params = {text: textValue};
+                onDoneEventHandler(params);
+            } else if (keyName == "Escape") {
+                onCancelEventHandler();
+            }
+        };
+    }
+    renderArcParamsEditor(arcElement, params, onDoneEventHandler, onCancelEventHandler) {
+        arcElement.innerHTML = "";
+        var textElement = document.createElement('input');
+        textElement.type = 'text';
+        var oldTextValue = params.text;
+        if (oldTextValue == undefined) {
+            oldTextValue = "";
+        }
+        textElement.value = oldTextValue;
+        arcElement.appendChild(textElement);
         textElement.focus();
         textElement.onkeyup = (event) => {
             const keyName = event.code;
@@ -109,8 +154,29 @@ class GraphDrawerNodeElement extends HTMLElement {
     }
 
 }
-
 customElements.define('graph-node', GraphDrawerNodeElement);
+
+class GraphDrawerArcElement extends HTMLElement {
+    constructor() {
+        super();
+    }
+
+    setSize(width, height) {
+        //this.style.width = width + "px";
+        //this.style.height = height + "px";
+    }
+
+    setCoords(x, y) {
+        this.style.left = x + "px";
+        this.style.top = y + "px";
+    }
+
+    setColor(color) {
+        this.style.backgroundColor = color;
+    }
+
+}
+customElements.define('graph-arc', GraphDrawerArcElement);
 
 export class GraphDrawer extends HTMLElement {
 
@@ -143,12 +209,12 @@ export class GraphDrawer extends HTMLElement {
         };
         this.nodeElements = new Map();
         this.arcElements = new Map();
+        this.arrowElements = new Map();
         this.fileName = "graph.json";
     }
     setupSVG() {
         this.svgElement = createSVG();
         this.appendChild(this.svgElement);
-        setSVGSize(this.svgElement, this.offsetWidth, this.offsetHeight);
     }
 
     getNodeElement(node) {
@@ -163,6 +229,12 @@ export class GraphDrawer extends HTMLElement {
     getArcElementById(arcId) {
         return this.arcElements.get(arcId);
     }
+    getArrowElement(arc) {
+        return this.arrowElements.get(arc.id);
+    }
+    getArrowElementById(arcId) {
+        return this.arrowElements.get(arcId);
+    }
 
     createNodeElement(node) {
         var element = document.createElement('graph-node');
@@ -171,9 +243,15 @@ export class GraphDrawer extends HTMLElement {
         return element;
     }
     createArcElement(arc) {
+        var element = document.createElement('graph-arc');
+        this.appendChild(element);
+        this.arcElements.set(arc.id, element);
+        return element;
+    }
+    createArrowElement(arc) {
         var element = createSVGArrow();
         this.svgElement.appendChild(element);
-        this.arcElements.set(arc.id, element);
+        this.arrowElements.set(arc.id, element);
         return element;
     }
 
@@ -183,7 +261,12 @@ export class GraphDrawer extends HTMLElement {
         this.getNodeElement(node).setSize(width, height);
     }
     updateArcElementScale(arc) {
-        setSVGArrowSize(this.getArcElement(arc), GraphDrawer.ARC_ELEMENT_SIZE*this.camera.zoom)
+        var width = 2*(GraphDrawer.NODE_ELEMENT_WIDTH * this.camera.zoom);
+        var height = 0.5*(GraphDrawer.NODE_ELEMENT_HEIGHT * this.camera.zoom);
+        this.getArcElement(arc).setSize(width, height);
+    }
+    updateArrowElementScale(arc) {
+        setSVGArrowSize(this.getArrowElement(arc), GraphDrawer.ARC_ELEMENT_SIZE*this.camera.zoom)
     }
     updateGraphElementsScale() {
         this.graph.forEachNode((node) => {
@@ -191,24 +274,39 @@ export class GraphDrawer extends HTMLElement {
         });
         this.graph.forEachArc((arc) => {
             this.updateArcElementScale(arc);
+            this.updateArrowElementScale(arc);
         });
     }
 
     updateNodeElementCoords(node) {
-        var x = node.coords.x * (GraphDrawer.METERS_TO_PIXELS_K*this.camera.zoom) + this.offsetWidth * 0.5 - (GraphDrawer.NODE_ELEMENT_WIDTH*this.camera.zoom) - this.camera.coords.x;
-        var y = node.coords.y * (GraphDrawer.METERS_TO_PIXELS_K*this.camera.zoom) + this.offsetHeight * 0.5 - (GraphDrawer.NODE_ELEMENT_HEIGHT*this.camera.zoom) - this.camera.coords.y;
+        var x = node.coords.x * (GraphDrawer.METERS_TO_PIXELS_K*this.camera.zoom) + this.offsetWidth * 0.5 - this.camera.coords.x;
+        var y = node.coords.y * (GraphDrawer.METERS_TO_PIXELS_K*this.camera.zoom) + this.offsetHeight * 0.5 - this.camera.coords.y;
         this.getNodeElement(node).setCoords(x, y);
     }
     updateArcElementCoords(arc) {
         var startNodeElement = this.getNodeElement(arc.startNode);
         var endNodeElement = this.getNodeElement(arc.endNode);
         var fromPoint = new Vector(
-            startNodeElement.offsetLeft + (GraphDrawer.NODE_ELEMENT_WIDTH*this.camera.zoom),
-            startNodeElement.offsetTop + (GraphDrawer.NODE_ELEMENT_HEIGHT*this.camera.zoom)
+            startNodeElement.offsetLeft,
+            startNodeElement.offsetTop
         );
         var toPoint = new Vector(
-            endNodeElement.offsetLeft + (GraphDrawer.NODE_ELEMENT_WIDTH*this.camera.zoom),
-            endNodeElement.offsetTop + (GraphDrawer.NODE_ELEMENT_HEIGHT*this.camera.zoom)
+            endNodeElement.offsetLeft,
+            endNodeElement.offsetTop
+        );
+        var coords = toPoint.add(fromPoint).multiply(0.5);
+        this.getArcElement(arc).setCoords(coords.x, coords.y);
+    }
+    updateArrowElementCoords(arc) {
+        var startNodeElement = this.getNodeElement(arc.startNode);
+        var endNodeElement = this.getNodeElement(arc.endNode);
+        var fromPoint = new Vector(
+            startNodeElement.offsetLeft,
+            startNodeElement.offsetTop
+        );
+        var toPoint = new Vector(
+            endNodeElement.offsetLeft,
+            endNodeElement.offsetTop
         );
         // arrow should be some smaller to point from node border to node border not point to point
         var delta = toPoint.substruct(fromPoint);
@@ -218,8 +316,8 @@ export class GraphDrawer extends HTMLElement {
         toPoint.x -= nodeRadius * Math.cos(angle);
         fromPoint.y += nodeRadius * Math.sin(angle);
         toPoint.y -= nodeRadius * Math.sin(angle);
-        var arcElement = this.getArcElement(arc);
-        replaceSVGArrow(arcElement, fromPoint, toPoint);
+        var arrowElement = this.getArrowElement(arc);
+        replaceSVGArrow(arrowElement, fromPoint, toPoint);
     }
     updateGraphElementsCoords() {
         this.graph.forEachNode((node) => {
@@ -227,11 +325,13 @@ export class GraphDrawer extends HTMLElement {
         });
         this.graph.forEachArc((arc) => {
             this.updateArcElementCoords(arc);
+            this.updateArrowElementCoords(arc);
         });
     }
     updateArcConnectedToNodeElementsCoords(node) {
         this.graph.forEachNodeArc(node, (arc) => {
             this.updateArcElementCoords(arc);
+            this.updateArrowElementCoords(arc);
         });
     }
 
@@ -259,6 +359,15 @@ export class GraphDrawer extends HTMLElement {
         },
         () => {
             this.eventNodeEditingCancel(this, node.id);
+        });
+    }
+    updateArcElementParamsEdit(arc) {
+        var arcElement = this.getArcElement(arc);
+        this.paramsRenderer.renderArcParamsEditor(arcElement, arc.params, (params) => {
+            this.eventArcEditingDone(this, arc.id, params);
+        },
+        () => {
+            this.eventArcEditingCancel(this, arc.id);
         });
     }
 
@@ -332,8 +441,8 @@ export class GraphDrawer extends HTMLElement {
     paintNode(node, color) {
         this.getNodeElement(node).setColor(color);
     }
-    paintArc(arc, color) {
-        setSVGArrowColor(this.getArcElement(arc), color);
+    paintArrow(arc, color) {
+        setSVGArrowColor(this.getArrowElement(arc), color);
     }
 
     setupSelection() {
@@ -363,11 +472,11 @@ export class GraphDrawer extends HTMLElement {
     }
     selectArc(arc) {
         this.selectedArcIds.add(arc.id);
-        this.paintArc(arc, '#0000FF');
+        this.paintArrow(arc, '#0000FF');
     }
     deselectArc(arc) {
         this.selectedArcIds.delete(arc.id);
-        this.paintArc(arc, '#000000');
+        this.paintArrow(arc, '#000000');
     }
     changeArcSelection(arc) {
         if (this.selectedArcIds.has(arc.id)) {
@@ -409,6 +518,10 @@ export class GraphDrawer extends HTMLElement {
         this.getArcElementById(arcId).remove();
         this.arcElements.delete(arcId);
     }
+    deleteArrowElement(arcId) {
+        this.getArrowElementById(arcId).remove();
+        this.arrowElements.delete(arcId);
+    }
     deleteNodeElement(nodeId) {
         this.getNodeElementById(nodeId).remove();
         this.nodeElements.delete(nodeId);
@@ -416,6 +529,7 @@ export class GraphDrawer extends HTMLElement {
 
     deleteArc(arc) {
         this.deleteArcElement(arc.id);
+        this.deleteArrowElement(arc.id);
         this.graph.deleteArc(arc);
     }
     deleteNode(node) {
@@ -451,11 +565,19 @@ export class GraphDrawer extends HTMLElement {
         return node;
     }
     createArc(startNode, endNode, params = {}) {
+        // virtual arc
         var arc = this.graph.createArc(startNode, endNode, params);
+        // arrow element
         this.createArcElement(arc);
-        this.paintArc(arc, '#000000');
+        this.createArrowElement(arc);
+        this.paintArrow(arc, '#000000');
+        this.updateArrowElementScale(arc);
+        this.updateArrowElementCoords(arc);
+        // arc element
+        this.createArcElement(arc);
         this.updateArcElementScale(arc);
         this.updateArcElementCoords(arc);
+        this.updateArcElementParams(arc);
         return arc;
     }
 
@@ -497,6 +619,7 @@ export class GraphDrawer extends HTMLElement {
         this.forEachSelectedArc((arc) => {
             this.graph.reverseArc(arc);
             this.updateArcElementCoords(arc);
+            this.updateArrowElementCoords(arc);
         });
     }
 
@@ -521,8 +644,15 @@ export class GraphDrawer extends HTMLElement {
     }
     linkArcElementToListeners(arc) {
         var arcElement = this.getArcElement(arc);
-        arcElement.addEventListener("mousedown", (e) => {this.eventArcElementMouseDown(this, arc.id, e)}); // WIP WARNING antipattern? madness?
-        arcElement.addEventListener("mouseup", (e) => {this.eventArcElementMouseUp(this, arc.id, e)}); // WIP WARNING antipattern? madness?
+        arcElement.addEventListener("mousedown", (e) => {this.eventArrowElementMouseDown(this, arc.id, e)}); // WIP WARNING antipattern? madness?
+        arcElement.addEventListener("mouseup", (e) => {this.eventArrowElementMouseUp(this, arc.id, e)}); // WIP WARNING antipattern? madness?
+        arcElement.addEventListener("dblclick", (e) => {this.eventArrowElementDoubleClick(this, arc.id, e)}); // WIP WARNING antipattern? madness?
+    }
+    linkArrowElementToListeners(arc) {
+        var arrowElement = this.getArrowElement(arc);
+        arrowElement.addEventListener("mousedown", (e) => {this.eventArrowElementMouseDown(this, arc.id, e)}); // WIP WARNING antipattern? madness?
+        arrowElement.addEventListener("mouseup", (e) => {this.eventArrowElementMouseUp(this, arc.id, e)}); // WIP WARNING antipattern? madness?
+        arrowElement.addEventListener("dblclick", (e) => {this.eventArrowElementDoubleClick(this, arc.id, e)}); // WIP WARNING antipattern? madness?
     }
     linkGraphElementsToListeners() {
         this.graph.forEachNode((node) => {
@@ -530,6 +660,7 @@ export class GraphDrawer extends HTMLElement {
         });
         this.graph.forEachArc((arc) => {
             this.linkArcElementToListeners(arc);
+            this.linkArrowElementToListeners(arc);
         });
     }
 
@@ -623,14 +754,14 @@ export class GraphDrawer extends HTMLElement {
         drawer.focus();
     }
 
-    eventArcElementMouseDown(drawer, arcId, event) {
+    eventArrowElementMouseDown(drawer, arcId, event) {
         if (drawer.editingMode) {
             return;
         }
         event.preventDefault();
         event.stopPropagation();
     }
-    eventArcElementMouseUp(drawer, arcId, event) {
+    eventArrowElementMouseUp(drawer, arcId, event) {
         if (drawer.editingMode) {
             return;
         }
@@ -638,6 +769,31 @@ export class GraphDrawer extends HTMLElement {
         event.stopPropagation();
         var arc = drawer.graph.getArc(arcId);
         drawer.changeArcSelection(arc);
+    }
+    eventArrowElementDoubleClick(drawer, arcId, event) {
+        if (drawer.editingMode) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        drawer.editingMode = true;
+        var arc = drawer.graph.getArc(arcId);
+        drawer.updateArcElementParamsEdit(arc);
+    }
+
+    eventArcEditingDone(drawer, arcId, params) {
+        drawer.saveChanges();
+        delete drawer.editingMode;
+        var arc = drawer.graph.getArc(arcId);
+        arc.params = params;
+        drawer.updateArcElementParams(arc);
+        drawer.focus();
+    }
+    eventArcEditingCancel(drawer, arcId) {
+        delete drawer.editingMode;
+        var arc = drawer.graph.getArc(arcId);
+        drawer.updateArcElementParams(arc);
+        drawer.focus();
     }
 
     static DELETE_KEYCODES = new Set(["Delete", "Backspace"]);
@@ -660,6 +816,7 @@ export class GraphDrawer extends HTMLElement {
             drawer.linkNodeElementToListeners(node);
             drawer.graph.forEachNodeArc(node, (arc) => { // WIP WARNING levels of abstraction mixing 
                 drawer.linkArcElementToListeners(arc);
+                drawer.linkArrowElementToListeners(arc);
             });
         } else if (GraphDrawer.CANCEL_KEYCODES.has(keyName)) {
             drawer.clearSelection();
@@ -669,6 +826,7 @@ export class GraphDrawer extends HTMLElement {
                 var arcs = drawer.connectSelectedNodes();
                 for (var arc of arcs) {
                     drawer.linkArcElementToListeners(arc);
+                    drawer.linkArrowElementToListeners(arc);
                 }
             }
         } else if (GraphDrawer.REVERSE_ARC_KEYCODES.has(keyName)) {
@@ -707,10 +865,18 @@ export class GraphDrawer extends HTMLElement {
         // create new arcs
         for (var arcId of changes.arcs) {
             var arc = this.graph.getArc(arcId);
-            if (!this.arcElements.has(arcId) && arc) {
+            if (!this.arrowElements.has(arcId) && arc) {
+                // arrow element
                 this.createArcElement(arc);
-                this.updateArcElementCoords(arc);
+                this.createArrowElement(arc);
+                this.paintArrow(arc, '#000000');
+                this.updateArrowElementScale(arc);
+                this.updateArrowElementCoords(arc);
+                this.linkArrowElementToListeners(arc);
+                // arc element
+                this.createArcElement(arc);
                 this.updateArcElementScale(arc);
+                this.updateArcElementCoords(arc);
                 this.updateArcElementParams(arc);
                 this.linkArcElementToListeners(arc);
             }
@@ -727,16 +893,18 @@ export class GraphDrawer extends HTMLElement {
         // update existing arcs
         for (var arcId of changes.arcs) {
             var arc = this.graph.getArc(arcId);
-            if (this.arcElements.has(arcId) && arc) {
+            if (this.arrowElements.has(arcId) && arc) {
                 this.updateArcElementParams(arc);
                 this.updateArcElementCoords(arc);
+                this.updateArrowElementCoords(arc);
             }
         }
         // delete old arcs
         for (var arcId of changes.arcs) {
             var arc = this.graph.getArc(arcId);
-            if (this.arcElements.has(arcId) && !arc) {
+            if (this.arrowElements.has(arcId) && !arc) {
                 this.deleteArcElement(arcId);
+                this.deleteArrowElement(arcId);
             }
         }
         // delete old nodes

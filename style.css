@@ -41,7 +41,29 @@ graph-node {
     justify-content: center;
     cursor: grab;
     background-color: white;
+    transform: translate(-50%, -50%);
 }
+
+graph-arc {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+    background-color: white;
+}
+
+graph-node p {
+    margin: 0;
+    padding: 0;
+}
+
+graph-arc p {
+    margin: 0;
+    padding: 0;
+}
+
 
 ul {
     text-align: left;

@@ -16,6 +16,7 @@ export function createSVG() {
     setSVGArrowSize(element, 1);
     return element;
 }
+// DEPRECATED ?
 export function setSVGSize(svgElement, width, height) {
     svgElement.setAttribute('width', width);
     svgElement.setAttribute('height', height);
@@ -38,3 +39,5 @@ export function setSVGArrowSize(element, size) {
 export function setSVGArrowColor(element, color) {
     element.setAttribute('stroke', color);
 }
+
+
