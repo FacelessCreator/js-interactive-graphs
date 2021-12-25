@@ -178,7 +178,6 @@ export class GraphDrawer extends HTMLElement {
         this.setupSVG();
 
         this.setupDraggingNode();
-        this.setupSelection();
 
         this.setupFocus();
         this.linkGraphElementsToListeners();
@@ -304,6 +303,21 @@ export class GraphDrawer extends HTMLElement {
         });
     }
 
+    updateNodeElementSelection(node) {
+        var color = "#000000";
+        if (this.graph.isNodeSelected(node)) {
+            color = "#0000FF";
+        }
+        this.paintNodeElement(node, color);
+    }
+    updateArrowElementSelection(arc) {
+        var color = "#000000";
+        if (this.graph.isArcSelected(arc)) {
+            color = "#0000FF";
+        }
+        this.paintArrowElement(arc, color);
+    }
+
     updateNodeElementParams(node) {
         var element = this.getNodeElement(node);
         this.paramsRenderer.renderNodeParams(element, node.params);
@@ -356,7 +370,7 @@ export class GraphDrawer extends HTMLElement {
         var deltaPixels = newPoint.substruct(this.draggingNodeLastPoint);
         this.draggingNodeLastPoint = newPoint;
         var deltaCoords = deltaPixels.multiply(1 / (GraphDrawer.METERS_TO_PIXELS_K*this.camera.zoom));
-        if (this.selectedNodeIds.has(this.draggingNodeId)) {
+        if (this.graph.isNodeSelected(node)) {
             this.applyDraggingToSelectedNodes(deltaCoords);
         } else {
             this.applyDraggingToNode(node, deltaCoords);
@@ -373,7 +387,7 @@ export class GraphDrawer extends HTMLElement {
         this.updateArcConnectedToNodeElementsCoords(node);
     }
     applyDraggingToSelectedNodes(deltaCoords) {
-        this.forEachSelectedNode((node) => {
+        this.graph.forEachSelectedNode((node) => {
             this.applyDraggingToNode(node, deltaCoords);
         });
     }
@@ -407,80 +421,13 @@ export class GraphDrawer extends HTMLElement {
         this.updateGraphElementsScale();
     }
 
-    paintNode(node, color) {
-        this.getNodeElement(node).setColor(color);
+    paintNodeElement(node, color) {
+        var element = this.getNodeElement(node);
+        element.setColor(color);
     }
-    paintArrow(arc, color) {
-        setSVGArrowColor(this.getArrowElement(arc), color);
-    }
-
-    setupSelection() {
-        this.selectedNodeIds = new Set();
-        this.selectedArcIds = new Set();
-    }
-    selectNode(node) {
-        this.selectedNodeIds.add(node.id);
-        this.paintNode(node, '#0000FF');
-    }
-    deselectNode(node) {
-        this.selectedNodeIds.delete(node.id);
-        this.paintNode(node, '#000000');
-    }
-    changeNodeSelection(node) {
-        if (this.selectedNodeIds.has(node.id)) {
-            this.deselectNode(node);
-        } else {
-            this.selectNode(node);
-        }
-    }
-    forEachSelectedNode(func) {
-        for(var id of this.selectedNodeIds) {
-            var node = this.graph.getNode(id);
-            func(node);
-        }
-    }
-    selectArc(arc) {
-        this.selectedArcIds.add(arc.id);
-        this.paintArrow(arc, '#0000FF');
-    }
-    deselectArc(arc) {
-        this.selectedArcIds.delete(arc.id);
-        this.paintArrow(arc, '#000000');
-    }
-    changeArcSelection(arc) {
-        if (this.selectedArcIds.has(arc.id)) {
-            this.deselectArc(arc);
-        } else {
-            this.selectArc(arc);
-        }
-    }
-    forEachSelectedArc(func) {
-        for(var id of this.selectedArcIds) {
-            var arc = this.graph.getArc(id);
-            func(arc);
-        }
-    }
-    clearSelection() {
-        this.forEachSelectedNode((node) => {
-            this.deselectNode(node);
-        });
-        this.forEachSelectedArc((arc) => {
-            this.deselectArc(arc);
-        });
-    }
-    removeNonExistentNodesFromSelection() {
-        for (var id of this.selectedNodeIds) {
-            if (!this.graph.getNode(id)) {
-                this.selectedNodeIds.delete(id);
-            }
-        }
-    }
-    removeNonExistentArcsFromSelection() {
-        for (var id of this.selectedArcIds) {
-            if (!this.graph.getArc(id)) {
-                this.selectedArcIds.delete(id);
-            }
-        }
+    paintArrowElement(arc, color) {
+        var element = this.getArrowElement(arc);
+        setSVGArrowColor(element, color);
     }
 
     deleteArcElement(arcId) {
@@ -514,14 +461,12 @@ export class GraphDrawer extends HTMLElement {
     }
 
     deleteSelected() {
-        this.forEachSelectedArc((arc) => {
+        this.graph.forEachSelectedArc((arc) => {
             this.deleteArc(arc);
         });
-        this.forEachSelectedNode((node) => {
+        this.graph.forEachSelectedNode((node) => {
             this.deleteNode(node);
         });
-        this.selectedArcIds.clear();
-        this.selectedNodeIds.clear();
     }
 
     createNode(params = {}, coords = new Vector()) {
@@ -538,7 +483,7 @@ export class GraphDrawer extends HTMLElement {
         // arrow element
         this.createArcElement(arc);
         this.createArrowElement(arc);
-        this.paintArrow(arc, '#000000');
+        this.paintArrowElement(arc, '#000000');
         this.updateArrowElementScale(arc);
         this.updateArrowElementCoords(arc);
         // arc element
@@ -550,20 +495,20 @@ export class GraphDrawer extends HTMLElement {
 
     createNodeConnectedToSelectedNodes() {
         var nodeCoords = new Vector();
-        if (this.selectedNodeIds.size > 0) {
-            this.forEachSelectedNode((selectedNode) => {
+        if (this.graph.selectedNodeIds.size > 0) {
+            this.graph.forEachSelectedNode((selectedNode) => {
                 nodeCoords = nodeCoords.add(selectedNode.coords);
             });
-            nodeCoords = nodeCoords.multiply(1 / this.selectedNodeIds.size);   
+            nodeCoords = nodeCoords.multiply(1 / this.graph.selectedNodeIds.size);   
         }
-        if (this.selectedNodeIds.size == 1) {
+        if (this.graph.selectedNodeIds.size == 1) {
             var randomVector = new Vector(Math.random()-0.5, Math.random()-0.5);
             nodeCoords = nodeCoords.add(randomVector);
-        } else if (this.selectedNodeIds.size == 0) {
+        } else if (this.graph.selectedNodeIds.size == 0) {
             nodeCoords = this.camera.coords.multiply(1 / (GraphDrawer.METERS_TO_PIXELS_K * this.camera.zoom));
         }
         var node = this.createNode({}, nodeCoords);
-        this.forEachSelectedNode((selectedNode) => {
+        this.graph.forEachSelectedNode((selectedNode) => {
             this.createArc(selectedNode, node);
         });
         return node;
@@ -572,7 +517,7 @@ export class GraphDrawer extends HTMLElement {
     connectSelectedNodes() {
         var arcs = [];
         var prevNode = null;
-        this.forEachSelectedNode((newNode) => {
+        this.graph.forEachSelectedNode((newNode) => {
             if (prevNode) {
                 var arc = this.createArc(prevNode, newNode);
                 arcs.push(arc);
@@ -583,11 +528,25 @@ export class GraphDrawer extends HTMLElement {
     }
 
     reverseSelectedArcs() {
-        this.forEachSelectedArc((arc) => {
+        this.graph.forEachSelectedArc((arc) => {
             this.graph.reverseArc(arc);
             this.updateArcElementCoords(arc);
             this.updateArrowElementCoords(arc);
         });
+    }
+
+    clearSelection() {
+        var selectedNodeIds = new Set(this.graph.selectedNodeIds);
+        var selectedArcIds = new Set(this.graph.selectedArcIds);
+        this.graph.clearSelection();
+        for (const id of selectedNodeIds) {
+            var node = this.graph.getNode(id);
+            this.updateNodeElementSelection(node);
+        }
+        for (const id of selectedArcIds) {
+            var arc = this.graph.getArc(id);
+            this.updateArrowElementSelection(arc);
+        }
     }
 
     setupFocus() {
@@ -691,7 +650,8 @@ export class GraphDrawer extends HTMLElement {
         event.stopPropagation();
         if (!drawer.draggindNodeWasMoved) {
             var node = drawer.graph.getNode(nodeId);
-            drawer.changeNodeSelection(node);
+            drawer.graph.changeNodeSelection(node);
+            drawer.updateNodeElementSelection(node)
         }
         if (drawer.draggingNodeId) {
             drawer.stopDraggingNode();
@@ -735,7 +695,8 @@ export class GraphDrawer extends HTMLElement {
         event.preventDefault();
         event.stopPropagation();
         var arc = drawer.graph.getArc(arcId);
-        drawer.changeArcSelection(arc);
+        drawer.graph.changeArcSelection(arc);
+        drawer.updateArrowElementSelection(arc);
     }
     eventArrowElementDoubleClick(drawer, arcId, event) {
         if (drawer.editingMode) {
@@ -788,13 +749,11 @@ export class GraphDrawer extends HTMLElement {
         } else if (GraphDrawer.CANCEL_KEYCODES.has(keyName)) {
             drawer.clearSelection();
         } else if (GraphDrawer.CONNECT_KEYCODES.has(keyName)) {
-            if (drawer.selectedNodeIds.size >= 2) {
-                drawer.saveChanges();
-                var arcs = drawer.connectSelectedNodes();
-                for (var arc of arcs) {
-                    drawer.linkArcElementToListeners(arc);
-                    drawer.linkArrowElementToListeners(arc);
-                }
+            drawer.saveChanges();
+            var arcs = drawer.connectSelectedNodes();
+            for (var arc of arcs) {
+                drawer.linkArcElementToListeners(arc);
+                drawer.linkArrowElementToListeners(arc);
             }
         } else if (GraphDrawer.REVERSE_ARC_KEYCODES.has(keyName)) {
             drawer.saveChanges();
@@ -824,6 +783,7 @@ export class GraphDrawer extends HTMLElement {
             if (!this.nodeElements.has(nodeId) && node) {
                 this.createNodeElement(node);
                 this.updateNodeElementCoords(node);
+                this.updateNodeElementSelection(node);
                 this.updateNodeElementParams(node);
                 this.linkNodeElementToListeners(node);
             }
@@ -835,9 +795,10 @@ export class GraphDrawer extends HTMLElement {
                 // arrow element
                 this.createArcElement(arc);
                 this.createArrowElement(arc);
-                this.paintArrow(arc, '#000000');
+                this.paintArrowElement(arc, '#000000');
                 this.updateArrowElementScale(arc);
                 this.updateArrowElementCoords(arc);
+                this.updateArrowElementSelection(arc);
                 this.linkArrowElementToListeners(arc);
                 // arc element
                 this.createArcElement(arc);
@@ -851,6 +812,7 @@ export class GraphDrawer extends HTMLElement {
             var node = this.graph.getNode(nodeId);
             if (this.nodeElements.has(nodeId) && node) {
                 this.updateNodeElementCoords(node);
+                this.updateNodeElementSelection(node);
                 this.updateNodeElementParams(node);
                 this.updateArcConnectedToNodeElementsCoords(node);
             }
@@ -862,6 +824,7 @@ export class GraphDrawer extends HTMLElement {
                 this.updateArcElementParams(arc);
                 this.updateArcElementCoords(arc);
                 this.updateArrowElementCoords(arc);
+                this.updateArrowElementSelection(arc);
             }
         }
         // delete old arcs
@@ -879,9 +842,6 @@ export class GraphDrawer extends HTMLElement {
                 this.deleteNodeElement(nodeId);
             }
         }
-        // update selection
-        this.removeNonExistentNodesFromSelection();
-        this.removeNonExistentArcsFromSelection();
     }
 
     rollback() {

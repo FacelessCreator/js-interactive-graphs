@@ -267,6 +267,8 @@ export class VisualGraph extends Graph {
 
     constructor() {
         super();
+        this.selectedNodeIds = new Set();
+        this.selectedArcIds = new Set();
     }
 
     createNode(params={}, id=null, coords=new Vector()) {
@@ -311,6 +313,8 @@ export class VisualGraph extends Graph {
         }
         newGraph.lastNodeId = this.lastNodeId;
         newGraph.lastArcId = this.lastArcId;
+        newGraph.selectedNodeIds = new Set(this.selectedNodeIds);
+        newGraph.selectedArcIds = new Set(this.selectedArcIds);
         return newGraph;
     }
 
@@ -325,6 +329,79 @@ export class VisualGraph extends Graph {
             var endNode = this.getNode(serializableArc.endNode);
             this.createArc(startNode, endNode, serializableArc.params, serializableArc.id);
         }
+    }
+
+    deleteArcBetweenNodes(startNode, endNode) {
+        var arc = this.findArcBetweenNodes(startNode, endNode);
+        this.deselectArc(arc);
+        this.deleteArcFromNode(arc, startNode);
+        this.deleteArcFromNode(arc, endNode);
+        this.arcs.delete(arc.id);
+    }
+    deleteArc(arc) {
+        this.deselectArc(arc);
+        this.deleteArcFromNode(arc, arc.startNode);
+        this.deleteArcFromNode(arc, arc.endNode);
+        this.arcs.delete(arc.id);
+    }
+    deleteNode(node) {
+        this.isolateNode(node);
+        this.deselectNode(node);
+        this.nodes.delete(node.id);
+    }
+
+    selectNode(node) {
+        this.selectedNodeIds.add(node.id);
+    }
+    deselectNode(node) {
+        this.selectedNodeIds.delete(node.id);
+    }
+    changeNodeSelection(node) {
+        if (this.selectedNodeIds.has(node.id)) {
+            this.deselectNode(node);
+        } else {
+            this.selectNode(node);
+        }
+    }
+    forEachSelectedNode(func) {
+        for(var id of this.selectedNodeIds) {
+            var node = this.getNode(id);
+            func(node);
+        }
+    }
+    selectArc(arc) {
+        this.selectedArcIds.add(arc.id);
+    }
+    deselectArc(arc) {
+        this.selectedArcIds.delete(arc.id);
+    }
+    changeArcSelection(arc) {
+        if (this.selectedArcIds.has(arc.id)) {
+            this.deselectArc(arc);
+        } else {
+            this.selectArc(arc);
+        }
+    }
+    forEachSelectedArc(func) {
+        for(var id of this.selectedArcIds) {
+            var arc = this.getArc(id);
+            func(arc);
+        }
+    }
+    clearSelection() {
+        this.forEachSelectedNode((node) => {
+            this.deselectNode(node);
+        });
+        this.forEachSelectedArc((arc) => {
+            this.deselectArc(arc);
+        });
+    }
+
+    isNodeSelected(node) {
+        return this.selectedNodeIds.has(node.id);
+    }
+    isArcSelected(arc) {
+        return this.selectedArcIds.has(arc.id);
     }
 
 }
@@ -386,6 +463,20 @@ export class VersionsVisualGraph extends VisualGraph {
                 node.coords = differentNode.coords.clone();
             }
         }
+        for (const id of version.selectedNodeIds) {
+            if (!this.selectedNodeIds.has(id)) {
+                changedNodeIds.add(id);
+                var node = this.getNode(id);
+                this.selectNode(node);
+            }
+        }
+        for (const id of this.selectedNodeIds) {
+            if (!version.selectedNodeIds.has(id)) {
+                changedNodeIds.add(id);
+                var node = this.getNode(id);
+                this.deselectNode(node);
+            }
+        }
         for (const id of this.nodes.keys()) {
             if (!version.nodes.has(id)) {
                 changedNodeIds.add(id);
@@ -409,6 +500,20 @@ export class VersionsVisualGraph extends VisualGraph {
                 var startNode = this.getNode(differentArc.startNode.id);
                 var endNode = this.getNode(differentArc.endNode.id);
                 this.createArc(startNode, endNode, differentArc.params, differentArc.id);
+            }
+        }
+        for (const id of version.selectedArcIds) {
+            if (!this.selectedArcIds.has(id)) {
+                changedArcIds.add(id);
+                var arc = this.getArc(id);
+                this.selectArc(arc);
+            }
+        }
+        for (const id of this.selectedArcIds) {
+            if (!version.selectedArcIds.has(id)) {
+                changedArcIds.add(id);
+                var arc = this.getArc(id);
+                this.deselectArc(arc);
             }
         }
         for (const id of this.arcs.keys()) {
