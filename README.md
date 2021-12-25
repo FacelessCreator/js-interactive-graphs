@@ -2,7 +2,7 @@
 
 [Click here to view demo](https://facelesscreator.github.io/js-interactive-graphs/)
 
-Custom HTMLElement - ```<graph-drawer>``` allows to visualize and edit graphs. See demo to understand controls.
+Custom HTMLElement - ```<graph-frame>``` allows to visualize and edit graphs. See demo to understand controls.
 
 The project requires modern browser capabilities, such as ```import``` and ```export```, custom elements, etc.
 
