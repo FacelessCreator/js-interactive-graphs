@@ -12,8 +12,8 @@ setupDefinitions();
 
 export function createSVG() {
     var element = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    setSVGArrowColor(element, '#000000');
-    setSVGArrowSize(element, 1);
+    //setSVGArrowColor(element, '#000000');
+    //setSVGArrowSize(element, 1);
     return element;
 }
 // DEPRECATED ?
@@ -24,7 +24,8 @@ export function setSVGSize(svgElement, width, height) {
 
 export function createSVGArrow() {
     var lineElement = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    lineElement.setAttribute('marker-end', 'url(#arrowMarker)')
+    lineElement.setAttribute('marker-end', 'url(#arrowMarker)');
+    setSVGArrowColor(lineElement, '#000000');
     return lineElement;
 }
 export function replaceSVGArrow(element, start, end) {

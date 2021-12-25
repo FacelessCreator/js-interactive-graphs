@@ -3,7 +3,7 @@ body {
     font-size: 15px;
 }
 
-graph-drawer {
+graph-frame {
     display: inline-block;
     margin: 0 auto 0 auto;
     border: 2px solid black;
@@ -11,10 +11,9 @@ graph-drawer {
     height: 85vh;
     position: relative;
     overflow: hidden;
-    cursor: move;
 }
 
-graph-drawer:focus {
+graph-frame:focus {
     border: 2px solid #0000FF;
 }
 
@@ -28,7 +27,7 @@ h2 {
     margin: 0.1em;
 }
 
-graph-drawer svg {
+graph-frame svg {
     position: absolute;
     left: 0;
     top: 0;
@@ -36,7 +35,7 @@ graph-drawer svg {
     height: 100%;
 }
 
-graph-drawer svg line {
+graph-frame svg line {
     cursor: pointer;
 }
 
@@ -46,7 +45,7 @@ graph-node {
     display: flex;
     justify-content: center;
     align-items: center;
-    cursor: grab;
+    cursor: move;
     background-color: white;
     transform: translate(-50%, -50%);
     min-width: 6em;
@@ -83,8 +82,9 @@ body div {
     margin: 0 auto 0 auto;
 }
 
-ul {
+body div {
     text-align: left;
+    padding-left: 2em;
 }
 
 .drag-hover svg {

@@ -1,39 +1,43 @@
 <!DOCTYPE html>
 
 <head>
-    <title>Interactive graphs - experimental</title>
+    <title>Graph editor</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <LINK href="style.css" rel="stylesheet" type="text/css">
 </head>
 
 <body>
-    <h1>Graphs' live in the wild</h1>
-    <graph-drawer></graph-drawer>
-    <h2>v Scroll down to view description v</h2>
+    <h1>Graph editor demo</h1>
+    <h2>Made by Faceless Creator; <a href="https://github.com/FacelessCreator/js-interactive-graphs">see GitHub Repository</a></h2>
+    <graph-frame></graph-frame>
+    <h2>🠗 Scroll down to view description 🠗</h2>
     <p>If you can't, unfocus the graph-drawer by pressing outside of the border</p>
     <div>
+        <h1>Controls</h1>
+        Controls work only if graph frame is focused.
         <ul>
+            <h2>Camera:</h2>
+            <li>Rotate wheel to move camera; hold shift to toggle axis</li>
+            <li>Hold ctrl and rotate wheel to zoom</li>
+            <h2>Dragging:</h2>
+            <li>Select and drag nodes pressing left mouse button</li>
+            <li>Select multiple nodes holding shift</li>
+            <li>Cancel selection pressing on field</li>
             <h2>Keys:</h2>
-            <li>drag nodes</li>
-            <li>click on element to select/deselect</li>
-            <li>click on field to cancel selection</li>
-            <li>drag field</li>
-            <li>scroll to zoom</li>
-            <li>double click to edit element</li>
-            <li>enter in edit mode to finish editing</li>
-            <li>escape in edit mode to cancel editing</li>
-            <li>n - new node</li>
-            <li>r - reverse arcs</li>
-            <li>c - connect nodes</li>
-            <li>delete, backspace - delete objects</li>
-            <li>escape - cancel selection</li>
-            <li>ctrl+Z - undo</li>
-            <li>ctrl+Y - redo</li>
-            <li>ctrl+S - save to JSON file</li>
-            <li>drag & drop JSON file - load from file</li>
+            <li>R - reverse selected arcs</li>
+            <li>N - create new node and connect to selected nodes</li>
+            <li>Delete & Backspace - delete selection</li>
+            <li>C - connect selected nodes</li>
+            <li>Escape - cancel selection</li>
+            <h2>Import & export:</h2>
+            <li>Ctrl+S - export graph to file on your machine</li>
+            <li>Drag & drop file on graph-frame to import graph</li>
         </ul>
+        <h1>Examples</h1>
+        <p><a href="examples/lots of nodes.json" download>lots of nodes</a></p>
+        <p><a href="examples/text.json" download>text in arcs & nodes</a></p>
     </div>
     
 </body>
 
-<script type="module" src="modules/graph/graph-drawer.js"></script>
+<script type="module" src="modules/graph/graph-frame.js"></script>
